@@ -1,9 +1,5 @@
 const pool = require("../config/db");
 
-/**
- * Full user SELECT with role + report count.
- * Used after updates and for single user detail.
- */
 const findById = async (userId) => {
   const [rows] = await pool.query(
     `SELECT
@@ -30,9 +26,6 @@ const findById = async (userId) => {
   return rows[0] ?? null;
 };
 
-/**
- * Paginated user list with optional search and role filter.
- */
 const findAll = async ({ search, role, limit = 20, offset = 0 }) => {
   let where = "WHERE u.is_active = 1";
   const params = [];
@@ -79,9 +72,6 @@ const findAll = async ({ search, role, limit = 20, offset = 0 }) => {
   return { users, total: countRes[0].total };
 };
 
-/**
- * Soft-delete a user (is_active = 0).
- */
 const softDelete = async (userId) => {
   await pool.query(
     "UPDATE users SET is_active = 0, updated_at = NOW() WHERE id = ?",
@@ -89,10 +79,6 @@ const softDelete = async (userId) => {
   );
 };
 
-/**
- * Toggle is_verified for a user.
- * Returns the new boolean value.
- */
 const toggleVerified = async (userId, currentStatus) => {
   const newStatus = currentStatus ? 0 : 1;
   await pool.query(
@@ -102,9 +88,6 @@ const toggleVerified = async (userId, currentStatus) => {
   return Boolean(newStatus);
 };
 
-/**
- * Change a user's role.
- */
 const updateRole = async (userId, roleName) => {
   const [roleRows] = await pool.query(
     "SELECT id FROM roles WHERE name = ? LIMIT 1",
@@ -118,9 +101,6 @@ const updateRole = async (userId, roleName) => {
   ]);
 };
 
-/**
- * Write an admin audit log entry.
- */
 const logAdminAction = async ({
   adminId,
   action,

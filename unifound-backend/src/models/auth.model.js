@@ -1,9 +1,5 @@
 const pool = require("../config/db");
 
-/**
- * Find a user by email including password_hash.
- * Used for login verification.
- */
 const findByEmail = async (email) => {
   const [rows] = await pool.query(
     `SELECT
@@ -26,9 +22,6 @@ const findByEmail = async (email) => {
   return rows[0] ?? null;
 };
 
-/**
- * Find a user by ID — safe, no password_hash.
- */
 const findById = async (id) => {
   const [rows] = await pool.query(
     `SELECT
@@ -52,9 +45,6 @@ const findById = async (id) => {
   return rows[0] ?? null;
 };
 
-/**
- * Check if an email is already registered.
- */
 const emailExists = async (email) => {
   const [rows] = await pool.query(
     "SELECT id FROM users WHERE email = ? LIMIT 1",
@@ -63,11 +53,6 @@ const emailExists = async (email) => {
   return rows.length > 0;
 };
 
-/**
- * Insert a new user and assign their role.
- * Runs inside a transaction.
- * Returns the newly created user (via findById).
- */
 const createUser = async (
   firstName,
   lastName,
@@ -110,18 +95,12 @@ const createUser = async (
   }
 };
 
-/**
- * Update last_login_at timestamp.
- */
 const updateLastLogin = async (userId) => {
   await pool.query("UPDATE users SET last_login_at = NOW() WHERE id = ?", [
     userId,
   ]);
 };
 
-/**
- * Log a user action (login, logout, etc.).
- */
 const logActivity = async (userId, action, ip = null, userAgent = null) => {
   await pool.query(
     `INSERT INTO user_activity_log (user_id, action, ip_address, user_agent)

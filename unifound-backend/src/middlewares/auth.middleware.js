@@ -22,7 +22,6 @@ const authenticate = (req, res, next) => {
   }
 };
 
-// Only allow certain roles
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.role)) {

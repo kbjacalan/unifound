@@ -1,8 +1,5 @@
 const pool = require("../config/db");
 
-/**
- * Get category_id from category name.
- */
 const getCategoryId = async (categoryName) => {
   const [rows] = await pool.query(
     "SELECT id FROM categories WHERE name = ? LIMIT 1",
@@ -11,9 +8,6 @@ const getCategoryId = async (categoryName) => {
   return rows[0]?.id ?? null;
 };
 
-/**
- * Get status_id from status name (lost | found | claimed | resolved).
- */
 const getStatusId = async (statusName = "lost") => {
   const [rows] = await pool.query(
     "SELECT id FROM item_statuses WHERE name = ? LIMIT 1",
@@ -22,9 +16,6 @@ const getStatusId = async (statusName = "lost") => {
   return rows[0]?.id ?? 1;
 };
 
-/**
- * Generate the next reference number e.g. LF-2026-0043.
- */
 const generateRefNumber = async () => {
   const year = new Date().getFullYear();
   const [rows] = await pool.query(
@@ -35,9 +26,6 @@ const generateRefNumber = async () => {
   return `LF-${year}-${next}`;
 };
 
-/**
- * Full item SELECT — used after insert and for detail view.
- */
 const findById = async (itemId) => {
   const [rows] = await pool.query(
     `SELECT
@@ -71,10 +59,6 @@ const findById = async (itemId) => {
   return rows[0] ?? null;
 };
 
-/**
- * Insert item + image + status history + activity log in one transaction.
- * Returns the created item via findById.
- */
 const createItem = async ({
   refNumber,
   name,
@@ -144,9 +128,6 @@ const createItem = async ({
   }
 };
 
-/**
- * Browse items with optional filters, search, sort, pagination.
- */
 const findAll = async ({
   status,
   category,
@@ -213,9 +194,6 @@ const findAll = async ({
   return { items, total: countRes[0].total };
 };
 
-/**
- * Get all items reported by a specific user.
- */
 const findByReporter = async (reporterId) => {
   const [rows] = await pool.query(
     `SELECT

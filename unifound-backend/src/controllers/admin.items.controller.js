@@ -1,11 +1,6 @@
 const AdminItemsModel = require("../models/admin.items.model");
 const { success, error } = require("../utils/apiResponse");
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/items
-// Query: ?search=wallet&status=lost&page=1&limit=20
-// Admin only
-// ─────────────────────────────────────────────────────────────────────────────
 const getAllItems = async (req, res, next) => {
   try {
     const { search, status, page = 1, limit = 20 } = req.query;
@@ -32,10 +27,6 @@ const getAllItems = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/admin/items/:id
-// Admin only
-// ─────────────────────────────────────────────────────────────────────────────
 const getItemById = async (req, res, next) => {
   try {
     const item = await AdminItemsModel.findById(req.params.id);
@@ -46,11 +37,6 @@ const getItemById = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PATCH /api/admin/items/:id/status
-// Body: { status: "lost" | "found" | "claimed" | "resolved" }
-// Admin only
-// ─────────────────────────────────────────────────────────────────────────────
 const updateItemStatus = async (req, res, next) => {
   try {
     const { status } = req.body;
@@ -94,11 +80,6 @@ const updateItemStatus = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DELETE /api/admin/items/:id
-// Soft-deletes a single item
-// Admin only
-// ─────────────────────────────────────────────────────────────────────────────
 const deleteItem = async (req, res, next) => {
   try {
     const itemId = parseInt(req.params.id);
@@ -122,11 +103,6 @@ const deleteItem = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DELETE /api/admin/items/bulk
-// Body: { ids: [1, 2, 3] }
-// Admin only
-// ─────────────────────────────────────────────────────────────────────────────
 const deleteItemsBulk = async (req, res, next) => {
   try {
     const { ids } = req.body;

@@ -1,9 +1,5 @@
 const pool = require("../config/db");
 
-/**
- * Full item list for admin — all items across all users with pagination,
- * search, and status filter.
- */
 const findAll = async ({ search, status, limit = 20, offset = 0 }) => {
   let where = "WHERE i.is_active = 1";
   const params = [];
@@ -62,9 +58,6 @@ const findAll = async ({ search, status, limit = 20, offset = 0 }) => {
   return { items, total: countRes[0].total };
 };
 
-/**
- * Get a single item by ID (admin view — no is_active filter).
- */
 const findById = async (itemId) => {
   const [rows] = await pool.query(
     `SELECT
@@ -94,9 +87,6 @@ const findById = async (itemId) => {
   return rows[0] ?? null;
 };
 
-/**
- * Get status_id from status name.
- */
 const getStatusId = async (statusName) => {
   const [rows] = await pool.query(
     "SELECT id FROM item_statuses WHERE name = ? LIMIT 1",
@@ -105,9 +95,6 @@ const getStatusId = async (statusName) => {
   return rows[0]?.id ?? null;
 };
 
-/**
- * Update an item's status and log the change in item_status_history.
- */
 const updateStatus = async (itemId, newStatusName, adminId) => {
   const conn = await pool.getConnection();
   try {
@@ -151,9 +138,6 @@ const updateStatus = async (itemId, newStatusName, adminId) => {
   }
 };
 
-/**
- * Soft-delete a single item (is_active = 0).
- */
 const softDelete = async (itemId) => {
   await pool.query(
     "UPDATE items SET is_active = 0, updated_at = NOW() WHERE id = ?",
@@ -161,9 +145,6 @@ const softDelete = async (itemId) => {
   );
 };
 
-/**
- * Soft-delete multiple items at once.
- */
 const softDeleteBulk = async (itemIds) => {
   if (!itemIds.length) return;
   const placeholders = itemIds.map(() => "?").join(", ");
@@ -173,9 +154,6 @@ const softDeleteBulk = async (itemIds) => {
   );
 };
 
-/**
- * Write an admin audit log entry for item actions.
- */
 const logAdminAction = async ({
   adminId,
   action,

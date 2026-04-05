@@ -3,7 +3,6 @@ const { error } = require("../utils/apiResponse");
 const errorHandler = (err, req, res, next) => {
   console.error(`[ERROR] ${err.message}`);
 
-  // MySQL duplicate entry
   if (err.code === "ER_DUP_ENTRY") {
     return error(res, "Email is already registered.", 409);
   }

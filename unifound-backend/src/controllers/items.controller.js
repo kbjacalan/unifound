@@ -2,9 +2,6 @@ const fs = require("fs");
 const ItemsModel = require("../models/items.model");
 const { success, error } = require("../utils/apiResponse");
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/items
-// ─────────────────────────────────────────────────────────────────────────────
 const createItem = async (req, res, next) => {
   try {
     const {
@@ -64,9 +61,6 @@ const createItem = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/items
-// ─────────────────────────────────────────────────────────────────────────────
 const getItems = async (req, res, next) => {
   try {
     const {
@@ -102,9 +96,6 @@ const getItems = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/items/my-reports
-// ─────────────────────────────────────────────────────────────────────────────
 const getMyReports = async (req, res, next) => {
   try {
     const items = await ItemsModel.findByReporter(req.user.id);
@@ -114,9 +105,6 @@ const getMyReports = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/items/:id
-// ─────────────────────────────────────────────────────────────────────────────
 const getItemDetail = async (req, res, next) => {
   try {
     const item = await ItemsModel.findById(req.params.id);

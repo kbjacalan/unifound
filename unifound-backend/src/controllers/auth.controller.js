@@ -8,9 +8,6 @@ const generateToken = (payload) =>
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
   });
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/auth/signup
-// ─────────────────────────────────────────────────────────────────────────────
 const signup = async (req, res, next) => {
   try {
     const {
@@ -51,9 +48,6 @@ const signup = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/auth/login
-// ─────────────────────────────────────────────────────────────────────────────
 const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -75,7 +69,6 @@ const login = async (req, res, next) => {
       req.headers["user-agent"],
     );
 
-    // Re-fetch without password_hash
     const user = await AuthModel.findById(userRecord.id);
     const token = generateToken({
       id: user.id,
@@ -89,9 +82,6 @@ const login = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/auth/me
-// ─────────────────────────────────────────────────────────────────────────────
 const getMe = async (req, res, next) => {
   try {
     const user = await AuthModel.findById(req.user.id);
@@ -102,9 +92,6 @@ const getMe = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// POST /api/auth/logout
-// ─────────────────────────────────────────────────────────────────────────────
 const logout = async (req, res, next) => {
   try {
     await AuthModel.logActivity(

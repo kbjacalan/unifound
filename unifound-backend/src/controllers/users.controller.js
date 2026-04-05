@@ -1,9 +1,6 @@
 const UsersModel = require("../models/users.model");
 const { success, error } = require("../utils/apiResponse");
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/users
-// ─────────────────────────────────────────────────────────────────────────────
 const getAllUsers = async (req, res, next) => {
   try {
     const { search, role, page = 1, limit = 20 } = req.query;
@@ -30,9 +27,6 @@ const getAllUsers = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// GET /api/users/:id
-// ─────────────────────────────────────────────────────────────────────────────
 const getUserById = async (req, res, next) => {
   try {
     const user = await UsersModel.findById(req.params.id);
@@ -43,9 +37,6 @@ const getUserById = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// DELETE /api/users/:id
-// ─────────────────────────────────────────────────────────────────────────────
 const deleteUser = async (req, res, next) => {
   try {
     const targetId = parseInt(req.params.id);
@@ -77,9 +68,6 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PATCH /api/users/:id/verify
-// ─────────────────────────────────────────────────────────────────────────────
 const verifyUser = async (req, res, next) => {
   try {
     const targetId = parseInt(req.params.id);
@@ -111,10 +99,6 @@ const verifyUser = async (req, res, next) => {
   }
 };
 
-// ─────────────────────────────────────────────────────────────────────────────
-// PATCH /api/users/:id/role
-// Body: { role: "Student" | "Staff" | "Administrator" }
-// ─────────────────────────────────────────────────────────────────────────────
 const changeUserRole = async (req, res, next) => {
   try {
     const targetId = parseInt(req.params.id);
