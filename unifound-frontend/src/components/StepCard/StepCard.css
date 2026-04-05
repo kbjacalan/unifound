@@ -1,0 +1,88 @@
+.step {
+  margin-bottom: 8rem;
+}
+
+.step-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  cursor: default;
+}
+
+.step-card {
+  padding: 2.5rem 2rem 2rem;
+  background: var(--secondary-background);
+  border: 1px solid var(--border-color);
+  border-radius: 2rem;
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.step-card:hover {
+  transform: translateY(-8px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--primary-blue);
+}
+
+.card-top-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: var(--card-accent, var(--primary-blue));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.35s ease;
+}
+.step-card:hover .card-top-bar {
+  transform: scaleX(1);
+}
+
+.icon-box {
+  width: 65px;
+  height: 65px;
+  background: var(--soft-blue);
+  border: 1px solid var(--active-soft-blue);
+  border-radius: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  font-size: 1.5rem;
+  transition: transform 0.3s ease;
+}
+
+.icon {
+  width: 32px;
+  height: 32px;
+  color: var(--primary-blue);
+}
+
+.step-title {
+  margin-bottom: 0.5rem;
+  font-size: clamp(1.1rem, 1.1rem + 0.075vw, 1.17rem);
+}
+
+.step-description {
+  color: var(--text-secondary);
+  font-size: clamp(0.9rem, 0.875rem + 0.25vw, 1rem);
+}
+
+.card-number {
+  position: absolute;
+  top: 2.5rem;
+  right: 1.5rem;
+  font-size: 3rem;
+  font-weight: 900;
+  color: var(--soft-blue);
+  line-height: 1;
+  letter-spacing: -0.05em;
+  pointer-events: none;
+  transition: color 0.3s;
+}
+.step-card:hover .card-number {
+  color: var(--active-soft-blue);
+}

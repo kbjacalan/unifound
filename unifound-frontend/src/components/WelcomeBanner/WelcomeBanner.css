@@ -1,0 +1,191 @@
+.wb-banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 28px 32px;
+  border-radius: 18px;
+  background: linear-gradient(
+    135deg,
+    var(--primary-blue, #2563eb) 0%,
+    #1e40af 100%
+  );
+  overflow: hidden;
+  box-shadow: 0 12px 32px -4px rgba(37, 99, 235, 0.35);
+  animation: wbFadeUp 0.4s ease both;
+}
+
+@keyframes wbFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Soft ambient glow */
+.wb-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse at 20% 50%,
+    rgba(255, 255, 255, 0.08) 0%,
+    transparent 60%
+  );
+  pointer-events: none;
+}
+
+/* ── Text ─────────────────────────────────────────────────────────────── */
+.wb-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  z-index: 1;
+}
+
+.wb-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wb-greeting {
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.72);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+.wb-name {
+  font-size: 26px;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+}
+
+.wb-sub {
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.75);
+  margin: 6px 0 0;
+}
+
+.wb-sub strong {
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.wb-match-highlight {
+  color: #bfdbfe !important;
+}
+
+/* ── Actions ──────────────────────────────────────────────────────────── */
+.wb-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.wb-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 18px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  font-family: "Geist", sans-serif;
+  cursor: pointer;
+  border: none;
+  transition:
+    background-color 0.15s ease,
+    transform 0.12s ease,
+    box-shadow 0.15s ease;
+}
+
+.wb-btn:active {
+  transform: scale(0.97);
+}
+
+.wb-btn--primary {
+  background-color: #ffffff;
+  color: var(--primary-blue, #2563eb);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.wb-btn--primary:hover {
+  background-color: #eff6ff;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+}
+
+.wb-btn--secondary {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(4px);
+}
+
+.wb-btn--secondary:hover {
+  background-color: rgba(255, 255, 255, 0.22);
+}
+
+/* ── Illustration ─────────────────────────────────────────────────────── */
+.wb-illustration {
+  position: relative;
+  width: 140px;
+  height: 120px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.wb-circle {
+  position: absolute;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.wb-circle--lg {
+  width: 130px;
+  height: 130px;
+}
+
+.wb-circle--md {
+  width: 90px;
+  height: 90px;
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.wb-circle--sm {
+  width: 50px;
+  height: 50px;
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.wb-icon {
+  color: rgba(255, 255, 255, 0.3);
+  position: absolute;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+@media (max-width: 640px) {
+  .wb-banner {
+    padding: 22px 20px;
+  }
+
+  .wb-illustration {
+    display: none;
+  }
+
+  .wb-name {
+    font-size: 21px;
+  }
+}

@@ -1,0 +1,288 @@
+.mission-section {
+  position: relative;
+  margin-bottom: 8rem;
+  padding: 4rem;
+  background: var(--secondary-background);
+  border: 1px solid var(--border-color);
+  border-radius: 2.5rem;
+  overflow: hidden;
+}
+
+.ms-top {
+  margin-bottom: 2.5rem;
+}
+
+.ms-title-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: start;
+}
+
+.mission-section h2 {
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+
+.mission-section h2 em {
+  font-style: italic;
+  color: var(--primary-blue);
+}
+
+.ms-subtitle {
+  color: var(--text-secondary);
+  font-size: clamp(0.875rem, 0.825rem + 0.25vw, 1rem);
+  line-height: 1.75;
+  padding-top: 0.4rem;
+}
+
+.mission-bento {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 1rem;
+}
+
+.bento-card {
+  position: relative;
+  background: var(--main-background);
+  border: 1px solid var(--border-color);
+  border-radius: 1.5rem;
+  padding: 1.75rem;
+  overflow: hidden;
+  transition:
+    border-color 0.25s,
+    transform 0.25s;
+}
+
+.bento-card:hover {
+  border-color: var(--active-soft-blue);
+  transform: translateY(-3px);
+}
+
+.bc-wide {
+  grid-column: span 2;
+}
+
+.bc-tall {
+  grid-row: span 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.bc-blue {
+  background: var(--primary-blue);
+  border-color: var(--primary-blue);
+  color: var(--text-white);
+}
+
+.bc-blue:hover {
+  border-color: var(--hover-blue);
+}
+
+.bc-tag {
+  font-family: "ui-monospace", "Cascadia Code", "Fira Mono", monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--primary-blue);
+  opacity: 0.7;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.bc-tag--white {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.bento-card h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.3;
+  margin-bottom: 0.75rem;
+}
+
+.bento-card > p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  line-height: 1.65;
+}
+
+.bc-blue .bc-highlight {
+  font-size: 1.1rem;
+  font-weight: 700;
+  line-height: 1.4;
+  letter-spacing: -0.02em;
+  color: var(--text-white);
+  margin-top: auto;
+}
+
+.bc-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-top: auto;
+}
+
+.bc-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  padding: 0.6rem 0.75rem;
+  background: var(--secondary-background);
+  border: 1px solid var(--border-color);
+  border-radius: 0.75rem;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+
+.bc-list li:hover {
+  border-color: var(--active-soft-blue);
+  background: var(--soft-blue);
+}
+
+.bcl-icon {
+  font-size: 1rem;
+  color: var(--primary-blue);
+}
+
+.bc-arrow {
+  position: absolute;
+  bottom: 1.25rem;
+  right: 1.5rem;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--active-soft-blue);
+  line-height: 1;
+  transition:
+    color 0.2s,
+    transform 0.2s;
+}
+
+.bento-card:hover .bc-arrow {
+  color: var(--primary-blue);
+  transform: translate(2px, -2px);
+}
+
+.bc-glow {
+  position: absolute;
+  bottom: -60px;
+  right: -60px;
+  width: 180px;
+  height: 180px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(37, 99, 235, 0.1) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+}
+
+.cta-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--primary-blue);
+  text-decoration: none;
+  padding-bottom: 2px;
+  border-bottom: 2px solid var(--active-soft-blue);
+  transition:
+    border-color 0.2s,
+    gap 0.2s;
+  margin-top: 0.5rem;
+}
+
+.cta-link:hover {
+  border-color: var(--primary-blue);
+  gap: 0.6rem;
+}
+
+.mission-visual {
+  position: absolute;
+  right: -80px;
+  bottom: -80px;
+  width: 380px;
+  height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.visual-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+}
+
+.ring-1 {
+  width: 380px;
+  height: 380px;
+  opacity: 0.5;
+}
+.ring-2 {
+  width: 260px;
+  height: 260px;
+  opacity: 0.4;
+}
+.ring-3 {
+  width: 145px;
+  height: 145px;
+  background: var(--soft-blue);
+}
+
+.visual-core {
+  width: 3rem;
+  z-index: 1;
+}
+
+@media (max-width: 950px) {
+  .mission-section {
+    padding: 2.5rem;
+  }
+
+  .ms-title-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .mission-bento {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .bc-wide {
+    grid-column: span 2;
+  }
+
+  .bc-tall {
+    grid-row: span 1;
+  }
+
+  .mission-visual {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  .mission-bento {
+    grid-template-columns: 1fr;
+  }
+
+  .bc-wide {
+    grid-column: span 1;
+  }
+}

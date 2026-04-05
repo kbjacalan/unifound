@@ -1,0 +1,78 @@
+# Dependencies
+node_modules/
+unifound-frontend/node_modules/
+unifound-backend/node_modules/
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build and dist folders
+unifound-frontend/dist/
+unifound-frontend/build/
+unifound-backend/dist/
+unifound-backend/build/
+
+# Environment files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+unifound-frontend/.env
+unifound-frontend/.env.local
+unifound-backend/.env
+unifound-backend/.env.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Uploaded files and temp uploads
+uploads/
+unifound-backend/uploads/*
+!unifound-backend/uploads/.gitkeep
+temp/
+tmp/
+
+# Editor and IDE files
+.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+!.vscode/launch.json
+.idea/
+.idea_modules/
+*.swp
+*.swo
+*~
+.project
+.classpath
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary and misc files
+*.tmp
+*.temp
+*.swp
+.turbo/
+dist/
+build/

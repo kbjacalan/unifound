@@ -1,0 +1,13 @@
+.section-label {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--primary-blue);
+  background: var(--soft-blue);
+  border: 1px solid var(--active-soft-blue);
+  padding: 0.35rem 0.9rem;
+  border-radius: 99px;
+  margin-bottom: 1.5rem;
+}

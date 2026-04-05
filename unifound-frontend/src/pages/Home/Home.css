@@ -1,0 +1,13 @@
+.home-container {
+  color: var(--text-main);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding-left: 5%;
+  padding-right: 5%;
+}
+
+@media (max-width: 1024px) {
+  .home-container {
+    padding-top: 6rem;
+  }
+}
