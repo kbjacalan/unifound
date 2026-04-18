@@ -1,50 +1,31 @@
 import { useRef, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 import {
-  LayoutDashboard,
   PackageSearch,
   PackagePlus,
   ClipboardList,
+  ClipboardCheck,
   Bell,
   Menu,
-  Users,
-  CheckCircle2,
-  BarChart2,
-  Sun,
-  Moon,
 } from "lucide-react";
 import { useSidebar } from "../../providers/SidebarProvider";
-import { useAuth } from "../../providers/AuthProvider";
+import { useNotifications } from "../../providers/NotificationsProvider";
 import Logo from "../../assets/logo.png";
-import LogoRed from "../../assets/logo-red.png";
 import "./Sidebar.css";
 
-const USER_NAV = [
-  { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+const NAV_ITEMS = [
   { to: "/browse-items", icon: PackageSearch, label: "Browse Items" },
   { to: "/report-item", icon: PackagePlus, label: "Report Item" },
   { to: "/my-reports", icon: ClipboardList, label: "My Reports" },
-  { to: "/notifications", icon: Bell, label: "Notifications", badge: 3 },
-];
-
-const ADMIN_NAV = [
-  { to: "/admin/dashboard", icon: LayoutDashboard, label: "Dashboard" },
-  { to: "/admin/manage-items", icon: PackageSearch, label: "Manage Items" },
-  { to: "/admin/manage-users", icon: Users, label: "Manage Users" },
-  { to: "/admin/resolved-cases", icon: CheckCircle2, label: "Resolved Cases" },
-  { to: "/admin/analytics", icon: BarChart2, label: "Analytics" },
-  { to: "/admin/notifications", icon: Bell, label: "Notifications", badge: 5 },
+  { to: "/my-claims", icon: ClipboardCheck, label: "My Claims" },
+  { to: "/notifications", icon: Bell, label: "Notifications" },
 ];
 
 const Sidebar = () => {
   const { isOpen, toggle, close } = useSidebar();
-  const { user } = useAuth();
+  const { unreadCount } = useNotifications();
   const sidebarRef = useRef(null);
   const hamburgerRef = useRef(null);
-
-  const isAdmin = user?.role === "Administrator";
-  const navItems = isAdmin ? ADMIN_NAV : USER_NAV;
-  const tagline = isAdmin ? "Admin Panel" : "Lost & Found Portal";
 
   const handleNavClick = () => {
     if (window.innerWidth <= 825) close();
@@ -70,7 +51,7 @@ const Sidebar = () => {
     <>
       <button
         ref={hamburgerRef}
-        className={`sidebar-hamburger ${isAdmin ? "sidebar-hamburger--admin" : ""}`}
+        className="sidebar-hamburger"
         onClick={toggle}
         aria-label={isOpen ? "Close menu" : "Open menu"}
       >
@@ -79,34 +60,24 @@ const Sidebar = () => {
 
       <aside
         ref={sidebarRef}
-        className={`sidebar ${isOpen ? "sidebar--open" : "sidebar--closed"} ${isAdmin ? "sidebar--admin" : ""}`}
+        className={`sidebar ${isOpen ? "sidebar--open" : "sidebar--closed"}`}
       >
         <div className="sidebar-brand">
-          <img
-            src={isAdmin ? LogoRed : Logo}
-            className="brand-logo"
-            alt="UniFound Logo"
-          />
+          <img src={Logo} className="brand-logo" alt="UniFound Logo" />
           <div className="brand-text">
             <p className="brand-name">
               Uni<span>Found</span>
             </p>
-            <span
-              className={`brand-tagline ${isAdmin ? "brand-tagline--admin" : ""}`}
-            >
-              {tagline}
-            </span>
+            <span className="brand-tagline">Lost &amp; Found Portal</span>
           </div>
         </div>
 
         <div className="sidebar-divider" />
 
-        <p className="sidebar-section-label">
-          {isAdmin ? "Management" : "Main Menu"}
-        </p>
+        <p className="sidebar-section-label">Main Menu</p>
 
         <nav className="sidebar-nav">
-          {navItems.map(({ to, icon: Icon, label, badge }) => (
+          {NAV_ITEMS.map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}
@@ -119,20 +90,12 @@ const Sidebar = () => {
                 <Icon size={18} />
               </span>
               <span className="item-label">{label}</span>
-              {badge && <span className="item-badge">{badge}</span>}
+              {to === "/notifications" && unreadCount > 0 && (
+                <span className="item-badge">{unreadCount}</span>
+              )}
             </NavLink>
           ))}
         </nav>
-
-        <div className="sidebar-spacer" />
-        <div className="sidebar-divider" />
-
-        <div className="sidebar-theme-toggle">
-          <span className="sidebar-theme-label">Dark Mode</span>
-          <button className="sidebar-theme-btn">
-            <span className="sidebar-theme-knob" />
-          </button>
-        </div>
       </aside>
     </>
   );

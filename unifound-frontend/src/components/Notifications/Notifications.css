@@ -6,7 +6,6 @@
   bottom: 0;
   overflow-y: auto;
   transition: left 0.3s ease;
-  background-color: var(--main-background, #f5f9ff);
 }
 
 .notif-wrapper--sidebar-open {
@@ -477,4 +476,46 @@
     width: 32px;
     height: 32px;
   }
+}
+
+/* ── Loading state ── */
+.notif-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 0;
+  color: var(--text-secondary, #64748b);
+  font-size: 14px;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.notif-spinner {
+  animation: spin 0.8s linear infinite;
+  color: var(--primary-blue, #2563eb);
+}
+
+/* ── View Item link ── */
+.notif-view-item {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  gap: 4px;
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--primary-blue, #2563eb);
+  text-decoration: none;
+  transition: opacity 0.15s;
+}
+
+.notif-view-item:hover {
+  opacity: 0.75;
+  text-decoration: underline;
 }

@@ -41,6 +41,7 @@ const findById = async (itemId) => {
        i.time_reported,
        i.contact_email,
        i.created_at,
+       i.reporter_id,
        u.first_name    AS reporter_first_name,
        u.last_name     AS reporter_last_name,
        u.email         AS reporter_email,
@@ -70,8 +71,6 @@ const createItem = async ({
   reporterId,
   contactEmail,
   imagePath = null,
-  ip = null,
-  userAgent = null,
 }) => {
   const conn = await pool.getConnection();
   try {
@@ -109,13 +108,6 @@ const createItem = async ({
          (item_id, old_status_id, new_status_id, changed_by)
        VALUES (?, NULL, ?, ?)`,
       [itemId, statusId, reporterId],
-    );
-
-    await conn.query(
-      `INSERT INTO user_activity_log
-         (user_id, action, entity_type, entity_id, ip_address, user_agent)
-       VALUES (?, 'submit_report', 'item', ?, ?, ?)`,
-      [reporterId, itemId, ip, userAgent],
     );
 
     await conn.commit();
@@ -167,8 +159,10 @@ const findAll = async ({
        c.name AS category,
        s.name AS status, s.label AS status_label,
        i.location, i.date_reported, i.contact_email, i.created_at,
+       i.reporter_id,
        u.first_name AS reporter_first_name,
        u.last_name  AS reporter_last_name,
+       u.email      AS reporter_email,
        u.avatar_initials,
        img.image_path AS image
      FROM items i
@@ -200,17 +194,138 @@ const findByReporter = async (reporterId) => {
        i.id, i.reference_number, i.name,
        c.name AS category,
        s.name AS status, s.label AS status_label,
-       i.location, i.date_reported, i.contact_email, i.created_at,
+       i.location, i.date_reported, i.contact_email, i.description, i.created_at,
+       i.reporter_id,
+       u.first_name AS reporter_first_name,
+       u.last_name  AS reporter_last_name,
+       u.email      AS reporter_email,
        img.image_path AS image
      FROM items i
      JOIN categories    c   ON c.id = i.category_id
      JOIN item_statuses s   ON s.id = i.status_id
+     JOIN users         u   ON u.id = i.reporter_id
      LEFT JOIN item_images img ON img.item_id = i.id AND img.is_primary = 1
      WHERE i.reporter_id = ? AND i.is_active = 1
      ORDER BY i.created_at DESC`,
     [reporterId],
   );
   return rows;
+};
+
+const updateItem = async (
+  itemId,
+  {
+    name,
+    description,
+    categoryId,
+    statusId,
+    location,
+    dateReported,
+    contactEmail,
+    imagePath,
+    reporterId,
+  },
+) => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    const [current] = await conn.query(
+      "SELECT status_id FROM items WHERE id = ? AND reporter_id = ? LIMIT 1",
+      [itemId, reporterId],
+    );
+    if (!current.length) throw new Error("Item not found or not authorized.");
+    const oldStatusId = current[0].status_id;
+
+    const fields = [];
+    const values = [];
+
+    if (name !== undefined) {
+      fields.push("name = ?");
+      values.push(name);
+    }
+    if (description !== undefined) {
+      fields.push("description = ?");
+      values.push(description);
+    }
+    if (categoryId !== undefined) {
+      fields.push("category_id = ?");
+      values.push(categoryId);
+    }
+    if (statusId !== undefined) {
+      fields.push("status_id = ?");
+      values.push(statusId);
+    }
+    if (location !== undefined) {
+      fields.push("location = ?");
+      values.push(location);
+    }
+    if (dateReported !== undefined) {
+      fields.push("date_reported = ?");
+      values.push(dateReported);
+    }
+    if (contactEmail !== undefined) {
+      fields.push("contact_email = ?");
+      values.push(contactEmail);
+    }
+
+    fields.push("updated_at = NOW()");
+    values.push(itemId, reporterId);
+
+    await conn.query(
+      `UPDATE items SET ${fields.join(", ")} WHERE id = ? AND reporter_id = ?`,
+      values,
+    );
+
+    if (imagePath !== undefined && imagePath !== null) {
+      const [existing] = await conn.query(
+        "SELECT id, image_path FROM item_images WHERE item_id = ? AND is_primary = 1 LIMIT 1",
+        [itemId],
+      );
+      if (existing.length) {
+        const oldPath = require("path").join(
+          process.cwd(),
+          existing[0].image_path,
+        );
+        if (require("fs").existsSync(oldPath))
+          require("fs").unlinkSync(oldPath);
+        await conn.query(
+          "UPDATE item_images SET image_path = ?, uploaded_at = NOW() WHERE id = ?",
+          [imagePath, existing[0].id],
+        );
+      } else {
+        await conn.query(
+          "INSERT INTO item_images (item_id, image_path, is_primary) VALUES (?, ?, 1)",
+          [itemId, imagePath],
+        );
+      }
+    }
+
+    if (statusId !== undefined && statusId !== oldStatusId) {
+      await conn.query(
+        `INSERT INTO item_status_history (item_id, old_status_id, new_status_id, changed_by)
+         VALUES (?, ?, ?, ?)`,
+        [itemId, oldStatusId, statusId, reporterId],
+      );
+    }
+
+    await conn.commit();
+    return await findById(itemId);
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
+};
+
+const softDelete = async (itemId, reporterId) => {
+  const [result] = await pool.query(
+    "UPDATE items SET is_active = 0, updated_at = NOW() WHERE id = ? AND reporter_id = ?",
+    [itemId, reporterId],
+  );
+  if (result.affectedRows === 0)
+    throw new Error("Item not found or not authorized.");
 };
 
 module.exports = {
@@ -221,4 +336,6 @@ module.exports = {
   createItem,
   findAll,
   findByReporter,
+  updateItem,
+  softDelete,
 };

@@ -1,27 +1,11 @@
 const express = require("express");
 const router = express.Router();
-
-const {
-  getAllUsers,
-  getUserById,
-  deleteUser,
-  verifyUser,
-  changeUserRole,
-} = require("../controllers/users.controller");
-
-const { authenticate, authorize } = require("../middlewares/auth.middleware");
+const { getProfile } = require("../controllers/users.controller");
+const { authenticate } = require("../middlewares/auth.middleware");
 
 router.use(authenticate);
-router.use(authorize("Administrator"));
 
-router.get("/", getAllUsers);
-
-router.get("/:id", getUserById);
-
-router.delete("/:id", deleteUser);
-
-router.patch("/:id/verify", verifyUser);
-
-router.patch("/:id/role", changeUserRole);
+// Any logged-in user can fetch their own profile
+router.get("/me", getProfile);
 
 module.exports = router;

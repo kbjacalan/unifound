@@ -1,31 +1,16 @@
 import { Navigate, useLocation } from "react-router-dom";
 
-const ProtectedRoute = ({
-  children,
-  isAuthenticated,
-  userRole,
-  requiresAdmin = false,
-  isPublic = false,
-}) => {
+const ProtectedRoute = ({ children, isAuthenticated, isPublic = false }) => {
   const location = useLocation();
-  const isAdmin = userRole === "Administrator";
 
+  // Logged-in users shouldn't access public/auth pages
   if (isPublic && isAuthenticated) {
-    return (
-      <Navigate to={isAdmin ? "/admin/dashboard" : "/dashboard"} replace />
-    );
+    return <Navigate to="/browse-items" replace />;
   }
 
+  // Private pages require authentication
   if (!isPublic && !isAuthenticated) {
     return <Navigate to="/" state={{ from: location }} replace />;
-  }
-
-  if (!isPublic && isAuthenticated && isAdmin && !requiresAdmin) {
-    return <Navigate to="/admin/dashboard" replace />;
-  }
-
-  if (!isPublic && requiresAdmin && !isAdmin) {
-    return <Navigate to="/dashboard" replace />;
   }
 
   return children;

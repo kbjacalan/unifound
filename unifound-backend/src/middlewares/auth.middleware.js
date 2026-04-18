@@ -22,13 +22,4 @@ const authenticate = (req, res, next) => {
   }
 };
 
-const authorize = (...roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.role)) {
-      return error(res, "Forbidden. You do not have permission.", 403);
-    }
-    next();
-  };
-};
-
-module.exports = { authenticate, authorize };
+module.exports = { authenticate };

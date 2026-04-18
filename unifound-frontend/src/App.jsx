@@ -1,12 +1,12 @@
 import { Routes, Route } from "react-router-dom";
 import { AuthProvider, useAuth } from "./providers/AuthProvider";
+import { NotificationsProvider } from "./providers/NotificationsProvider";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 // Layouts
 import MainLayout from "./layout/MainLayout";
 import AuthLayout from "./layout/AuthLayout";
-import DashboardLayout from "./layout/DashboardLayout";
-import AdminDashboardLayout from "./layout/AdminDashboardLayout";
+import UserPageLayout from "./layout/UserPageLayout";
 
 // Utilities
 import ScrollToTop from "./utils/ScrollToTop";
@@ -19,23 +19,14 @@ import SignUp from "./pages/SignUp/SignUp";
 import Login from "./pages/Login/Login";
 
 // User pages
-import Dashboard from "./pages/Dashboard/Dashboard";
 import Browse from "./pages/Browse/Browse";
-import Report from "./pages/Report/Report";
+import ReportItem from "./pages/ReportItem/ReportItem";
 import MyReport from "./pages/MyReport/MyReport";
+import MyClaims from "./pages/MyClaims/MyClaims";
 import Notifications from "./pages/Notifications/Notifications";
 
-// Admin pages
-import AdminDashboard from "./pages/AdminDashboard/AdminDashboard";
-import ManageItems from "./pages/ManageItems/ManageItems";
-import ManageUsers from "./pages/ManageUsers/ManageUsers";
-import ResolvedCases from "./pages/ResolvedCases/ResolvedCases";
-import Analytics from "./pages/Analytics/Analytics";
-import AdminNotifications from "./pages/AdminNotifications/AdminNotifications";
-
 const AppRoutes = () => {
-  const { isAuthenticated, user } = useAuth();
-  const userRole = user?.role;
+  const { isAuthenticated } = useAuth();
 
   return (
     <>
@@ -43,11 +34,7 @@ const AppRoutes = () => {
       <Routes>
         <Route
           element={
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              userRole={userRole}
-              isPublic={true}
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} isPublic={true}>
               <MainLayout />
             </ProtectedRoute>
           }
@@ -59,11 +46,7 @@ const AppRoutes = () => {
 
         <Route
           element={
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              userRole={userRole}
-              isPublic={true}
-            >
+            <ProtectedRoute isAuthenticated={isAuthenticated} isPublic={true}>
               <AuthLayout />
             </ProtectedRoute>
           }
@@ -74,39 +57,16 @@ const AppRoutes = () => {
 
         <Route
           element={
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              userRole={userRole}
-              requiresAdmin={false}
-            >
-              <DashboardLayout />
+            <ProtectedRoute isAuthenticated={isAuthenticated}>
+              <UserPageLayout />
             </ProtectedRoute>
           }
         >
-          <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/browse-items" element={<Browse />} />
-          <Route path="/report-item" element={<Report />} />
+          <Route path="/report-item" element={<ReportItem />} />
           <Route path="/my-reports" element={<MyReport />} />
+          <Route path="/my-claims" element={<MyClaims />} />
           <Route path="/notifications" element={<Notifications />} />
-        </Route>
-
-        <Route
-          element={
-            <ProtectedRoute
-              isAuthenticated={isAuthenticated}
-              userRole={userRole}
-              requiresAdmin={true}
-            >
-              <AdminDashboardLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/manage-items" element={<ManageItems />} />
-          <Route path="/admin/manage-users" element={<ManageUsers />} />
-          <Route path="/admin/resolved-cases" element={<ResolvedCases />} />
-          <Route path="/admin/analytics" element={<Analytics />} />
-          <Route path="/admin/notifications" element={<AdminNotifications />} />
         </Route>
       </Routes>
     </>
@@ -116,7 +76,9 @@ const AppRoutes = () => {
 function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <NotificationsProvider>
+        <AppRoutes />
+      </NotificationsProvider>
     </AuthProvider>
   );
 }

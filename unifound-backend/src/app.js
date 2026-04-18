@@ -7,7 +7,8 @@ const path = require("path");
 const authRoutes = require("./routes/auth.routes");
 const itemsRoutes = require("./routes/items.routes");
 const usersRoutes = require("./routes/users.routes");
-const adminItemsRoutes = require("./routes/admin.items.routes");
+const claimsRoutes = require("./routes/claims.routes");
+const notificationsRoutes = require("./routes/notifications.routes");
 const errorHandler = require("./middlewares/error.middleware");
 
 const app = express();
@@ -31,7 +32,8 @@ app.get("/", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/items", itemsRoutes);
 app.use("/api/users", usersRoutes);
-app.use("/api/admin/items", adminItemsRoutes);
+app.use("/api/claims", claimsRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 app.use((_req, res) => {
   res.status(404).json({ success: false, message: "Route not found." });

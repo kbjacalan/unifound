@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import {
   Bell,
   Search,
@@ -8,43 +8,79 @@ import {
   X,
   User,
   LogOut,
-  ShieldCheck,
+  CheckCircle2,
+  MessageSquare,
+  AlertCircle,
+  Clock,
+  CheckCheck,
 } from "lucide-react";
 import { useSidebar } from "../../providers/SidebarProvider";
 import { useAuth } from "../../providers/AuthProvider";
+import { useNotifications } from "../../providers/NotificationsProvider";
 import "./Topbar.css";
 
-const USER_TITLES = {
-  "/dashboard": "Dashboard",
+const API_BASE = "http://localhost:5000";
+
+const PAGE_TITLES = {
   "/browse-items": "Browse Items",
   "/report-item": "Report Item",
   "/my-reports": "My Reports",
+  "/my-claims": "My Claims",
   "/notifications": "Notifications",
   "/settings": "Settings",
+  "/profile": "Profile",
 };
 
-const ADMIN_TITLES = {
-  "/admin/dashboard": "Dashboard",
-  "/admin/manage-items": "Manage Items",
-  "/admin/manage-users": "Manage Users",
-  "/admin/resolved-cases": "Resolved Cases",
-  "/admin/analytics": "Analytics",
-  "/admin/notifications": "Notifications",
-  "/admin/settings": "Settings",
+const NOTIF_ICONS = {
+  claimed: CheckCircle2,
+  message: MessageSquare,
+  alert: AlertCircle,
+};
+
+const timeAgo = (dateStr) => {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  return `${Math.floor(hrs / 24)}d ago`;
 };
 
 const Topbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [notifs, setNotifs] = useState([]);
+  const [notifLoading, setNotifLoading] = useState(false);
+
   const { isOpen: sidebarOpen } = useSidebar();
   const { user, logout } = useAuth();
+  const { unreadCount, refresh: refreshNotifCount } = useNotifications();
   const { pathname } = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const dropdownRef = useRef(null);
+  const notifRef = useRef(null);
+  const mobileInputRef = useRef(null);
 
-  const isAdmin = user?.role === "Administrator";
-  const titles = isAdmin ? ADMIN_TITLES : USER_TITLES;
-  const pageTitle = titles[pathname] ?? "UniFound";
+  const isMyReports = pathname === "/my-reports";
+  const isBrowse = pathname === "/browse-items";
+  const isSearchSynced = isMyReports || isBrowse;
+  const pageTitle = PAGE_TITLES[pathname] ?? "UniFound";
+
+  const [searchQuery, setSearchQuery] = useState(
+    isSearchSynced ? (searchParams.get("search") ?? "") : "",
+  );
+
+  useEffect(() => {
+    if (isSearchSynced) {
+      setSearchQuery(searchParams.get("search") ?? "");
+    } else {
+      setSearchQuery("");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const avatarInitials =
     user?.avatar_initials ||
@@ -53,20 +89,90 @@ const Topbar = () => {
 
   const fullName = user ? `${user.first_name} ${user.last_name}` : "User";
 
+  // Close user dropdown on outside click
   useEffect(() => {
-    const handleOutsideClick = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+    const handler = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target))
         setDropdownOpen(false);
-      }
     };
-    if (dropdownOpen)
-      document.addEventListener("mousedown", handleOutsideClick);
-    return () => document.removeEventListener("mousedown", handleOutsideClick);
+    if (dropdownOpen) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, [dropdownOpen]);
 
+  // Close notif dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target))
+        setNotifOpen(false);
+    };
+    if (notifOpen) document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [notifOpen]);
+
+  // Close both on route change
   useEffect(() => {
     setDropdownOpen(false);
+    setNotifOpen(false);
   }, [pathname]);
+
+  // Auto-focus mobile input
+  useEffect(() => {
+    if (searchOpen) setTimeout(() => mobileInputRef.current?.focus(), 50);
+  }, [searchOpen]);
+
+  // Fetch unread notifications when dropdown opens
+  useEffect(() => {
+    if (!notifOpen) return;
+    const fetchNotifs = async () => {
+      setNotifLoading(true);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`${API_BASE}/api/notifications?limit=6`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        const all = data.data?.notifications ?? [];
+        setNotifs(all.filter((n) => !n.is_read));
+      } catch {
+        setNotifs([]);
+      } finally {
+        setNotifLoading(false);
+      }
+    };
+    fetchNotifs();
+  }, [notifOpen]);
+
+  const markAllRead = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      await fetch(`${API_BASE}/api/notifications/read-all`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setNotifs([]);
+      refreshNotifCount?.();
+    } catch {}
+  };
+
+  const handleNotifClick = async (notif) => {
+    if (!notif.is_read) {
+      try {
+        const token = localStorage.getItem("token");
+        await fetch(`${API_BASE}/api/notifications/${notif.id}/read`, {
+          method: "PATCH",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setNotifs((prev) => prev.filter((n) => n.id !== notif.id));
+        refreshNotifCount?.();
+      } catch {}
+    }
+    setNotifOpen(false);
+    if (notif.item_id) {
+      notif.type === "message"
+        ? navigate(`/my-reports?item=${notif.item_id}`)
+        : navigate("/my-claims");
+    }
+  };
 
   const handleLogout = () => {
     setDropdownOpen(false);
@@ -74,28 +180,69 @@ const Topbar = () => {
     navigate("/");
   };
 
+  const submitSearch = (query) => {
+    const trimmed = query.trim();
+    if (isSearchSynced) {
+      setSearchParams(trimmed ? { search: trimmed } : {}, { replace: true });
+      setSearchOpen(false);
+      return;
+    }
+    if (!trimmed) return;
+    setSearchOpen(false);
+    navigate(`/browse-items?search=${encodeURIComponent(trimmed)}`);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter") submitSearch(searchQuery);
+    if (e.key === "Escape") {
+      setSearchOpen(false);
+      if (!isSearchSynced) setSearchQuery("");
+    }
+  };
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+    if (isSearchSynced) {
+      setSearchParams(val.trim() ? { search: val.trim() } : {}, {
+        replace: true,
+      });
+    }
+  };
+
+  const dropdownUnread = notifs.filter((n) => !n.is_read).length;
+
   return (
     <>
       <header
-        className={`topbar ${isAdmin ? "topbar--admin" : ""} ${sidebarOpen ? "topbar--sidebar-open" : "topbar--sidebar-closed"}`}
+        className={`topbar ${sidebarOpen ? "topbar--sidebar-open" : "topbar--sidebar-closed"}`}
       >
         <span className="topbar-title">{pageTitle}</span>
 
+        {/* Desktop search */}
         <div className="topbar-search topbar-search--desktop">
-          <span className="topbar-search-icon">
-            <Search size={15} />
-          </span>
           <input
             type="text"
             placeholder={
-              isAdmin
-                ? "Search items, users, reports..."
+              isMyReports
+                ? "Search your reports..."
                 : "Search items, reports..."
             }
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onKeyDown={handleKeyDown}
           />
+          <button
+            className="topbar-search-btn"
+            aria-label="Search"
+            onClick={() => submitSearch(searchQuery)}
+          >
+            <Search size={17} />
+          </button>
         </div>
 
         <div className="topbar-actions">
+          {/* Mobile search toggle */}
           <button
             className="topbar-icon-btn topbar-search-toggle"
             aria-label="Toggle search"
@@ -104,13 +251,101 @@ const Topbar = () => {
             {searchOpen ? <X size={17} /> : <Search size={17} />}
           </button>
 
-          <button className="topbar-icon-btn" aria-label="Notifications">
-            <Bell size={17} />
-            <span className="badge">{isAdmin ? 5 : 3}</span>
-          </button>
+          {/* Notification bell */}
+          <div className="topbar-notif-wrap" ref={notifRef}>
+            <button
+              className={`topbar-icon-btn ${notifOpen ? "topbar-icon-btn--active" : ""}`}
+              aria-label="Notifications"
+              onClick={() => setNotifOpen((p) => !p)}
+            >
+              <Bell size={17} />
+              {unreadCount > 0 && <span className="badge">{unreadCount}</span>}
+            </button>
+
+            {notifOpen && (
+              <div className="topbar-notif-dropdown">
+                <div className="topbar-notif-header">
+                  <span className="topbar-notif-title">
+                    Notifications
+                    {dropdownUnread > 0 && (
+                      <span className="topbar-notif-count">
+                        {dropdownUnread}
+                      </span>
+                    )}
+                  </span>
+                  {dropdownUnread > 0 && (
+                    <button
+                      className="topbar-notif-mark-all"
+                      onClick={markAllRead}
+                    >
+                      <CheckCheck size={12} />
+                      Mark all read
+                    </button>
+                  )}
+                </div>
+
+                <div className="topbar-notif-divider" />
+
+                <div className="topbar-notif-list">
+                  {notifLoading ? (
+                    <div className="topbar-notif-empty">
+                      <Clock size={20} />
+                      <span>Loading…</span>
+                    </div>
+                  ) : notifs.length === 0 ? (
+                    <div className="topbar-notif-empty">
+                      <Bell size={20} />
+                      <span>No unread notifications</span>
+                    </div>
+                  ) : (
+                    notifs.map((notif) => {
+                      const Icon = NOTIF_ICONS[notif.type] ?? Bell;
+                      return (
+                        <button
+                          key={notif.id}
+                          className="topbar-notif-item topbar-notif-item--unread"
+                          onClick={() => handleNotifClick(notif)}
+                        >
+                          <div
+                            className={`topbar-notif-icon topbar-notif-icon--${notif.type}`}
+                          >
+                            <Icon size={13} />
+                          </div>
+                          <div className="topbar-notif-body">
+                            <p className="topbar-notif-item-title">
+                              {notif.title}
+                            </p>
+                            <p className="topbar-notif-item-body">
+                              {notif.body}
+                            </p>
+                            <span className="topbar-notif-item-time">
+                              {timeAgo(notif.created_at)}
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+
+                <div className="topbar-notif-divider" />
+
+                <button
+                  className="topbar-notif-view-all"
+                  onClick={() => {
+                    setNotifOpen(false);
+                    navigate("/notifications");
+                  }}
+                >
+                  View all notifications
+                </button>
+              </div>
+            )}
+          </div>
 
           <div className="topbar-divider" />
 
+          {/* User dropdown */}
           <div className="topbar-user-wrap" ref={dropdownRef}>
             <div
               className={`topbar-user ${dropdownOpen ? "topbar-user--active" : ""}`}
@@ -119,10 +354,7 @@ const Topbar = () => {
               <div className="topbar-user-avatar">{avatarInitials}</div>
               <div className="topbar-user-info">
                 <span className="topbar-user-name">{fullName}</span>
-                <span className="topbar-user-role">
-                  {isAdmin && <ShieldCheck size={9} />}
-                  {user?.role || "User"}
-                </span>
+                <span className="topbar-user-role">{user?.role || "User"}</span>
               </div>
               <span
                 className={`topbar-user-chevron ${dropdownOpen ? "topbar-user-chevron--open" : ""}`}
@@ -162,7 +394,7 @@ const Topbar = () => {
                   className="topbar-dropdown-item"
                   onClick={() => {
                     setDropdownOpen(false);
-                    navigate(isAdmin ? "/admin/settings" : "/settings");
+                    navigate("/settings");
                   }}
                 >
                   <Settings size={15} />
@@ -184,22 +416,30 @@ const Topbar = () => {
         </div>
       </header>
 
+      {/* Mobile search drawer */}
       <div
-        className={`topbar-search-drawer ${isAdmin ? "topbar-search-drawer--admin" : ""} ${sidebarOpen ? "topbar-search-drawer--sidebar-open" : ""} ${searchOpen ? "topbar-search-drawer--open" : ""}`}
+        className={`topbar-search-drawer ${sidebarOpen ? "topbar-search-drawer--sidebar-open" : ""} ${searchOpen ? "topbar-search-drawer--open" : ""}`}
       >
         <div className="topbar-search-drawer-inner">
-          <span className="topbar-search-icon">
-            <Search size={15} />
-          </span>
           <input
+            ref={mobileInputRef}
             type="text"
             placeholder={
-              isAdmin
-                ? "Search items, users, reports..."
+              isMyReports
+                ? "Search your reports..."
                 : "Search items, reports..."
             }
-            autoFocus={searchOpen}
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onKeyDown={handleKeyDown}
           />
+          <button
+            className="topbar-search-drawer-btn"
+            aria-label="Search"
+            onClick={() => submitSearch(searchQuery)}
+          >
+            <Search size={17} />
+          </button>
         </div>
       </div>
     </>

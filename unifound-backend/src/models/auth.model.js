@@ -9,7 +9,6 @@ const findByEmail = async (email) => {
        u.email,
        u.password_hash,
        u.avatar_initials,
-       u.is_verified,
        u.is_active,
        r.name AS role
      FROM users u
@@ -30,7 +29,6 @@ const findById = async (id) => {
        u.last_name,
        u.email,
        u.avatar_initials,
-       u.is_verified,
        u.is_active,
        u.last_login_at,
        u.created_at,
@@ -101,19 +99,10 @@ const updateLastLogin = async (userId) => {
   ]);
 };
 
-const logActivity = async (userId, action, ip = null, userAgent = null) => {
-  await pool.query(
-    `INSERT INTO user_activity_log (user_id, action, ip_address, user_agent)
-     VALUES (?, ?, ?, ?)`,
-    [userId, action, ip, userAgent],
-  );
-};
-
 module.exports = {
   findByEmail,
   findById,
   emailExists,
   createUser,
   updateLastLogin,
-  logActivity,
 };

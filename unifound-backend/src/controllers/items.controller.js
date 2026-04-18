@@ -50,8 +50,6 @@ const createItem = async (req, res, next) => {
       reporterId: req.user.id,
       contactEmail: contactEmail.trim(),
       imagePath,
-      ip: req.ip,
-      userAgent: req.headers["user-agent"],
     });
 
     return success(res, { item }, "Item reported successfully.", 201);
@@ -115,4 +113,97 @@ const getItemDetail = async (req, res, next) => {
   }
 };
 
-module.exports = { createItem, getItems, getMyReports, getItemDetail };
+const updateItem = async (req, res, next) => {
+  try {
+    const itemId = parseInt(req.params.id);
+    const {
+      name,
+      category,
+      status,
+      location,
+      dateReported,
+      contactEmail,
+      description,
+    } = req.body;
+
+    const errs = {};
+    if (name !== undefined && !name?.trim())
+      errs.name = "Item name is required.";
+    if (location !== undefined && !location?.trim())
+      errs.location = "Location is required.";
+    if (dateReported !== undefined && !dateReported)
+      errs.dateReported = "Date is required.";
+    if (contactEmail !== undefined) {
+      if (!contactEmail?.trim())
+        errs.contactEmail = "Contact email is required.";
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail))
+        errs.contactEmail = "Invalid email address.";
+    }
+
+    if (Object.keys(errs).length) {
+      if (req.file) fs.unlinkSync(req.file.path);
+      return error(res, "Validation failed.", 400, errs);
+    }
+
+    let categoryId;
+    if (category) {
+      categoryId = await ItemsModel.getCategoryId(category);
+      if (!categoryId) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        return error(res, `Category "${category}" not found.`, 400);
+      }
+    }
+
+    let statusId;
+    if (status) {
+      statusId = await ItemsModel.getStatusId(status);
+    }
+
+    const imagePath = req.file
+      ? `/uploads/items/${req.file.filename}`
+      : undefined;
+
+    const item = await ItemsModel.updateItem(itemId, {
+      name: name?.trim(),
+      description:
+        description !== undefined ? description?.trim() || null : undefined,
+      categoryId,
+      statusId,
+      location: location?.trim(),
+      dateReported,
+      contactEmail: contactEmail?.trim(),
+      imagePath,
+      reporterId: req.user.id,
+    });
+
+    return success(res, { item }, "Item updated successfully.");
+  } catch (err) {
+    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+    if (err.message === "Item not found or not authorized.") {
+      return error(res, err.message, 403);
+    }
+    next(err);
+  }
+};
+
+const deleteItem = async (req, res, next) => {
+  try {
+    const itemId = parseInt(req.params.id);
+    await ItemsModel.softDelete(itemId, req.user.id);
+    return success(res, {}, "Item deleted successfully.");
+  } catch (err) {
+    if (err.message === "Item not found or not authorized.") {
+      return error(res, err.message, 403);
+    }
+    next(err);
+  }
+};
+
+module.exports = {
+  createItem,
+  getItems,
+  getMyReports,
+  getItemDetail,
+  updateItem,
+  deleteItem,
+};

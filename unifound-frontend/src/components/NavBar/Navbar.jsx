@@ -39,10 +39,6 @@ function Navbar() {
           <li>Home</li>
         </NavLink>
 
-        <NavLink to="/signup">
-          <li>Dashboard</li>
-        </NavLink>
-
         <NavLink to="/about">
           <li>About</li>
         </NavLink>

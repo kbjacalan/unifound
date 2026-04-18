@@ -8,17 +8,19 @@ const STATUSES = [
   { value: "lost", label: "Lost" },
   { value: "found", label: "Found" },
   { value: "claimed", label: "Claimed" },
-  { value: "resolved", label: "Resolved" },
 ];
 
 const CATEGORIES = [
   { value: "all", label: "All Categories" },
-  { value: "Accessories", label: "Accessories" },
-  { value: "Identification", label: "Identification" },
   { value: "Electronics", label: "Electronics" },
-  { value: "Personal Items", label: "Personal Items" },
-  { value: "Books", label: "Books" },
-  { value: "Clothing", label: "Clothing" },
+  { value: "Clothing & Accessories", label: "Clothing & Accessories" },
+  { value: "Bags & Wallets", label: "Bags & Wallets" },
+  { value: "Books & Stationery", label: "Books & Stationery" },
+  { value: "Keys", label: "Keys" },
+  { value: "Jewelry", label: "Jewelry" },
+  { value: "ID & Cards", label: "ID & Cards" },
+  { value: "Sports & Equipment", label: "Sports & Equipment" },
+  { value: "Other", label: "Other" },
 ];
 
 const SORT_OPTIONS = [
@@ -33,10 +35,10 @@ const STATUS_CHIP_CLASS = {
   lost: "chip--lost",
   found: "chip--found",
   claimed: "chip--claimed",
-  resolved: "chip--resolved",
 };
 
-const ItemFilter = ({ filters = {}, onChange }) => {
+// showClaimed: show the "Claimed" status chip (MyReport only, not Browse)
+const ItemFilter = ({ filters = {}, onChange, showClaimed = true }) => {
   const { isOpen: sidebarOpen } = useSidebar();
   const [showAdvanced, setShowAdvanced] = useState(false);
 
@@ -56,6 +58,10 @@ const ItemFilter = ({ filters = {}, onChange }) => {
 
   const clearAll = () =>
     onChange?.({ status: "all", category: "all", sort: "newest" });
+
+  const visibleStatuses = showClaimed
+    ? STATUSES
+    : STATUSES.filter((s) => s.value !== "claimed");
 
   return (
     <div
@@ -85,7 +91,8 @@ const ItemFilter = ({ filters = {}, onChange }) => {
             Clear
           </button>
         )}
-        {STATUSES.map((s) => (
+
+        {visibleStatuses.map((s) => (
           <button
             key={s.value}
             onClick={() => update("status", s.value)}
@@ -105,7 +112,6 @@ const ItemFilter = ({ filters = {}, onChange }) => {
         className={`item-filter-advanced ${showAdvanced ? "item-filter-advanced--open" : ""}`}
       >
         <div className="item-filter-advanced-inner">
-          {/* Category */}
           <div className="item-filter-field">
             <label className="item-filter-label">Category</label>
             <div className="item-filter-select-wrap">

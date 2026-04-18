@@ -15,7 +15,7 @@ const FAQCard = () => {
     },
     {
       q: "How do I report a found item?",
-      a: "Head to the Found Items page, fill in the details, and our system handles the rest.",
+      a: "Head to the Report Item page, fill in the details, and our system handles the rest.",
     },
   ];
 

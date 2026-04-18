@@ -36,6 +36,7 @@ const signup = async (req, res, next) => {
       passwordHash,
       role,
     );
+
     const token = generateToken({
       id: user.id,
       email: user.email,
@@ -62,12 +63,6 @@ const login = async (req, res, next) => {
     if (!isMatch) return error(res, "Invalid email or password.", 401);
 
     await AuthModel.updateLastLogin(userRecord.id);
-    await AuthModel.logActivity(
-      userRecord.id,
-      "login",
-      req.ip,
-      req.headers["user-agent"],
-    );
 
     const user = await AuthModel.findById(userRecord.id);
     const token = generateToken({
@@ -92,18 +87,4 @@ const getMe = async (req, res, next) => {
   }
 };
 
-const logout = async (req, res, next) => {
-  try {
-    await AuthModel.logActivity(
-      req.user.id,
-      "logout",
-      req.ip,
-      req.headers["user-agent"],
-    );
-    return success(res, {}, "Logged out successfully.");
-  } catch (err) {
-    next(err);
-  }
-};
-
-module.exports = { signup, login, getMe, logout };
+module.exports = { signup, login, getMe };
