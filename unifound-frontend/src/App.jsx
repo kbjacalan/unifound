@@ -15,8 +15,8 @@ import ScrollToTop from "./utils/ScrollToTop";
 import Home from "./pages/Home/Home";
 import About from "./pages/About/About";
 import Contact from "./pages/Contact/Contact";
-import SignUp from "./pages/SignUp/SignUp";
-import Login from "./pages/Login/Login";
+import Signup from "./pages/Signup/Signup";
+import Signin from "./pages/Signin/Signin";
 
 // User pages
 import Browse from "./pages/Browse/Browse";
@@ -51,8 +51,8 @@ const AppRoutes = () => {
             </ProtectedRoute>
           }
         >
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<Signup />} />
+          <Route path="/signin" element={<Signin />} />
         </Route>
 
         <Route

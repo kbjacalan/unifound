@@ -1,45 +1,20 @@
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import {
-  GraduationCap,
-  PackageSearch,
-  BriefcaseBusiness,
-  Eye,
-  EyeOff,
-} from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../../providers/AuthProvider";
 import Logo from "../../assets/logo.png";
-import "./AuthForm.css";
+import "./Signin.css";
 
 const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
 
-const ROLES = [
-  {
-    value: "Student",
-    label: "Student",
-    description: "I'm a university student",
-    icon: GraduationCap,
-  },
-  {
-    value: "Staff",
-    label: "Staff",
-    description: "I'm a university staff member",
-    icon: BriefcaseBusiness,
-  },
-];
-
-const AuthForm = ({ mode = "signup" }) => {
-  const isSignup = mode === "signup";
+const Signin = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
 
   const [form, setForm] = useState({
-    first_name: "",
-    last_name: "",
     email: "",
     password: "",
-    role: "Student",
   });
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
@@ -54,10 +29,6 @@ const AuthForm = ({ mode = "signup" }) => {
 
   const validate = () => {
     const errs = {};
-    if (isSignup) {
-      if (!form.first_name.trim()) errs.first_name = "First name is required";
-      if (!form.last_name.trim()) errs.last_name = "Last name is required";
-    }
     if (!form.email.trim()) errs.email = "Email is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       errs.email = "Enter a valid email";
@@ -80,27 +51,13 @@ const AuthForm = ({ mode = "signup" }) => {
     setLoading(true);
 
     try {
-      const endpoint = isSignup
-        ? `${API_URL}/api/auth/signup`
-        : `${API_URL}/api/auth/login`;
-
-      const body = isSignup
-        ? {
-            first_name: form.first_name,
-            last_name: form.last_name,
-            email: form.email,
-            password: form.password,
-            role: form.role,
-          }
-        : {
-            email: form.email,
-            password: form.password,
-          };
-
-      const res = await fetch(endpoint, {
+      const res = await fetch(`${API_URL}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
+        body: JSON.stringify({
+          email: form.email,
+          password: form.password,
+        }),
       });
 
       const data = await res.json();
@@ -111,10 +68,9 @@ const AuthForm = ({ mode = "signup" }) => {
       }
 
       localStorage.setItem("token", data.data.token);
-
       login(data.data.user);
 
-      const redirectTo = location.state?.from?.pathname ?? "/dashboard";
+      const redirectTo = location.state?.from?.pathname ?? "/browse-items";
       navigate(redirectTo, { replace: true });
     } catch (err) {
       setApiError("Cannot connect to server. Please try again later.");
@@ -130,36 +86,8 @@ const AuthForm = ({ mode = "signup" }) => {
           <img className="brand-logo" src={Logo} alt="UniFound Logo" />
         </div>
 
-        <h2 className="auth-title">
-          {isSignup ? "Create your account" : "Welcome back"}
-        </h2>
-        <p className="auth-subtitle">
-          {isSignup
-            ? "Join UniFound to report and find lost items."
-            : "Sign in to access your dashboard."}
-        </p>
-
-        {isSignup && (
-          <div className="auth-role-toggle">
-            {ROLES.map((role) => {
-              const Icon = role.icon;
-              return (
-                <button
-                  key={role.value}
-                  type="button"
-                  className={`auth-role-btn ${form.role === role.value ? "auth-role-btn--active" : ""}`}
-                  onClick={() => set("role", role.value)}
-                >
-                  <Icon size={18} />
-                  <div>
-                    <span className="auth-role-label">{role.label}</span>
-                    <span className="auth-role-desc">{role.description}</span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-        )}
+        <h2 className="auth-title">Welcome back</h2>
+        <p className="auth-subtitle">Sign in to access your dashboard.</p>
 
         {apiError && (
           <div
@@ -179,46 +107,6 @@ const AuthForm = ({ mode = "signup" }) => {
         )}
 
         <form className="auth" onSubmit={handleSubmit} noValidate>
-          {isSignup && (
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "12px",
-              }}
-            >
-              <div
-                className={`auth-field ${errors.first_name ? "auth-field--error" : ""}`}
-              >
-                <label className="auth-label">First Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Bryan"
-                  value={form.first_name}
-                  onChange={(e) => set("first_name", e.target.value)}
-                />
-                {errors.first_name && (
-                  <span className="auth-error">{errors.first_name}</span>
-                )}
-              </div>
-
-              <div
-                className={`auth-field ${errors.last_name ? "auth-field--error" : ""}`}
-              >
-                <label className="auth-label">Last Name</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Jacalan"
-                  value={form.last_name}
-                  onChange={(e) => set("last_name", e.target.value)}
-                />
-                {errors.last_name && (
-                  <span className="auth-error">{errors.last_name}</span>
-                )}
-              </div>
-            </div>
-          )}
-
           <div
             className={`auth-field ${errors.email ? "auth-field--error" : ""}`}
           >
@@ -239,7 +127,7 @@ const AuthForm = ({ mode = "signup" }) => {
             <div className="auth-password-wrap">
               <input
                 type={showPassword ? "text" : "password"}
-                placeholder={isSignup ? "Min. 6 characters" : "Your password"}
+                placeholder="Your password"
                 value={form.password}
                 onChange={(e) => set("password", e.target.value)}
               />
@@ -258,20 +146,11 @@ const AuthForm = ({ mode = "signup" }) => {
           </div>
 
           <button type="submit" className="auth-submit-btn" disabled={loading}>
-            {loading
-              ? isSignup
-                ? "Creating Account..."
-                : "Signing In..."
-              : isSignup
-                ? "Create Account"
-                : "Sign In"}
+            {loading ? "Signing In..." : "Sign In"}
           </button>
 
           <p className="auth-switch">
-            {isSignup ? "Already have an account?" : "Don't have an account?"}{" "}
-            <Link to={isSignup ? "/login" : "/signup"}>
-              {isSignup ? "Sign in" : "Sign up"}
-            </Link>
+            Don't have an account? <Link to="/signup">Sign up</Link>
           </p>
         </form>
       </div>
@@ -279,4 +158,4 @@ const AuthForm = ({ mode = "signup" }) => {
   );
 };
 
-export default AuthForm;
+export default Signin;
