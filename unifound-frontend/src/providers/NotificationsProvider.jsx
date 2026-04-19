@@ -12,7 +12,7 @@ const NotificationsContext = createContext({
   refresh: () => {},
 });
 
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
 
 export const NotificationsProvider = ({ children }) => {
   const { isAuthenticated } = useAuth();

@@ -26,7 +26,7 @@ import ClaimModal from "../ClaimModal/ClaimModal";
 import IncomingClaims from "../IncomingClaims/IncomingClaims";
 import "./ItemDetail.css";
 
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
 
 const STATUS_CONFIG = {
   lost: {

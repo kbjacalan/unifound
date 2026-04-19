@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import "./ClaimModal.css";
 
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
 
 const ClaimModal = ({ item, onClose, onSubmitted }) => {
   const [message, setMessage] = useState("");

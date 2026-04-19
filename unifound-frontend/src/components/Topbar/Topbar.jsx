@@ -19,7 +19,7 @@ import { useAuth } from "../../providers/AuthProvider";
 import { useNotifications } from "../../providers/NotificationsProvider";
 import "./Topbar.css";
 
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
 
 const PAGE_TITLES = {
   "/browse-items": "Browse Items",

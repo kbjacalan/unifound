@@ -11,7 +11,7 @@ import { useAuth } from "../../providers/AuthProvider";
 import Logo from "../../assets/logo.png";
 import "./AuthForm.css";
 
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
 
 const ROLES = [
   {

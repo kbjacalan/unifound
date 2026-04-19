@@ -21,7 +21,7 @@ import EditItemForm from "../EditItemForm/EditItemForm";
 import ConfirmModal from "../ConfirmModal/ConfirmModal";
 import "./ItemList.css";
 
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
 
 const STATUS_CONFIG = {
   lost: { label: "Lost", className: "status--lost" },

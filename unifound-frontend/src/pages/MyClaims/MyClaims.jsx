@@ -17,7 +17,7 @@ import {
 import { useSidebar } from "../../providers/SidebarProvider";
 import "./MyClaims.css";
 
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
 
 const timeAgo = (dateStr) => {
   const diff = Date.now() - new Date(dateStr).getTime();

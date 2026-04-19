@@ -3,7 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import ItemFilter from "../../components/ItemFilter/ItemFilter";
 import ItemList from "../../components/ItemList/ItemList";
 
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
 
 const Browse = () => {
   const [searchParams, setSearchParams] = useSearchParams();

@@ -18,7 +18,7 @@ import {
 import { useSidebar } from "../../providers/SidebarProvider";
 import "./Notifications.css";
 
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
 
 const NOTIF_TYPES = {
   match: { icon: PackageSearch, color: "notif--match", label: "Match Found" },
