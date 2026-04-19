@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import "./IncomingClaims.css";
 
-const API_BASE = "http://localhost:5000";
+const API_URL = "http://localhost:5000";
 
 const timeAgo = (dateStr) => {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -36,7 +36,7 @@ const IncomingClaims = ({ itemId, onClaimActioned }) => {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/claims/item/${itemId}`, {
+      const res = await fetch(`${API_URL}/api/claims/item/${itemId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -57,7 +57,7 @@ const IncomingClaims = ({ itemId, onClaimActioned }) => {
     setActionLoading(claimId);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/claims/${claimId}/${action}`, {
+      const res = await fetch(`${API_URL}/api/claims/${claimId}/${action}`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });

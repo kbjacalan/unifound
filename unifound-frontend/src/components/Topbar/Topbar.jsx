@@ -19,7 +19,7 @@ import { useAuth } from "../../providers/AuthProvider";
 import { useNotifications } from "../../providers/NotificationsProvider";
 import "./Topbar.css";
 
-const API_BASE = "http://localhost:5000";
+const API_URL = "http://localhost:5000";
 
 const PAGE_TITLES = {
   "/browse-items": "Browse Items",
@@ -127,7 +127,7 @@ const Topbar = () => {
       setNotifLoading(true);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`${API_BASE}/api/notifications?limit=6`, {
+        const res = await fetch(`${API_URL}/api/notifications?limit=6`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -145,7 +145,7 @@ const Topbar = () => {
   const markAllRead = async () => {
     try {
       const token = localStorage.getItem("token");
-      await fetch(`${API_BASE}/api/notifications/read-all`, {
+      await fetch(`${API_URL}/api/notifications/read-all`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -158,7 +158,7 @@ const Topbar = () => {
     if (!notif.is_read) {
       try {
         const token = localStorage.getItem("token");
-        await fetch(`${API_BASE}/api/notifications/${notif.id}/read`, {
+        await fetch(`${API_URL}/api/notifications/${notif.id}/read`, {
           method: "PATCH",
           headers: { Authorization: `Bearer ${token}` },
         });

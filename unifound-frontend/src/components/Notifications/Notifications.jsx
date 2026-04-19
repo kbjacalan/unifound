@@ -18,7 +18,7 @@ import {
 import { useSidebar } from "../../providers/SidebarProvider";
 import "./Notifications.css";
 
-const API_BASE = "http://localhost:5000";
+const API_URL = "http://localhost:5000";
 
 const NOTIF_TYPES = {
   match: { icon: PackageSearch, color: "notif--match", label: "Match Found" },
@@ -126,7 +126,7 @@ const Notifications = () => {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/notifications`, {
+      const res = await fetch(`${API_URL}/api/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -148,7 +148,7 @@ const Notifications = () => {
     );
     try {
       const token = localStorage.getItem("token");
-      await fetch(`${API_BASE}/api/notifications/${id}/read`, {
+      await fetch(`${API_URL}/api/notifications/${id}/read`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -161,7 +161,7 @@ const Notifications = () => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     try {
       const token = localStorage.getItem("token");
-      await fetch(`${API_BASE}/api/notifications/${id}`, {
+      await fetch(`${API_URL}/api/notifications/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -174,7 +174,7 @@ const Notifications = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
     try {
       const token = localStorage.getItem("token");
-      await fetch(`${API_BASE}/api/notifications/read-all`, {
+      await fetch(`${API_URL}/api/notifications/read-all`, {
         method: "PATCH",
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -190,7 +190,7 @@ const Notifications = () => {
       const token = localStorage.getItem("token");
       await Promise.all(
         toDelete.map((n) =>
-          fetch(`${API_BASE}/api/notifications/${n.id}`, {
+          fetch(`${API_URL}/api/notifications/${n.id}`, {
             method: "DELETE",
             headers: { Authorization: `Bearer ${token}` },
           }),

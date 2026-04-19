@@ -11,7 +11,7 @@ import { useAuth } from "../../providers/AuthProvider";
 import Logo from "../../assets/logo.png";
 import "./AuthForm.css";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "http://localhost:5000";
 
 const ROLES = [
   {
@@ -81,8 +81,8 @@ const AuthForm = ({ mode = "signup" }) => {
 
     try {
       const endpoint = isSignup
-        ? `${API_URL}/auth/signup`
-        : `${API_URL}/auth/login`;
+        ? `${API_URL}/api/auth/signup`
+        : `${API_URL}/api/auth/login`;
 
       const body = isSignup
         ? {

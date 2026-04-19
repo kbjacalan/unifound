@@ -26,7 +26,7 @@ import ClaimModal from "../ClaimModal/ClaimModal";
 import IncomingClaims from "../IncomingClaims/IncomingClaims";
 import "./ItemDetail.css";
 
-const API_BASE = "http://localhost:5000";
+const API_URL = "http://localhost:5000";
 
 const STATUS_CONFIG = {
   lost: {
@@ -76,7 +76,7 @@ const ItemDetail = ({ item: listItem, onBack }) => {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/items/${id}`, {
+      const res = await fetch(`${API_URL}/api/items/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
@@ -114,7 +114,7 @@ const ItemDetail = ({ item: listItem, onBack }) => {
             ? `${raw.reporter_first_name} ${raw.reporter_last_name}`
             : "Unknown",
         reporterEmail: raw.reporter_email ?? null,
-        image: raw.image ? `${API_BASE}${raw.image}` : null,
+        image: raw.image ? `${API_URL}${raw.image}` : null,
         description:
           raw.description ||
           "No additional description has been provided for this item. If you have more information, please contact the reporter directly or reach out to the Lost & Found office.",
@@ -152,7 +152,7 @@ const ItemDetail = ({ item: listItem, onBack }) => {
   const checkExistingClaim = async (itemId) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/claims/check/${itemId}`, {
+      const res = await fetch(`${API_URL}/api/claims/check/${itemId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
@@ -181,7 +181,7 @@ const ItemDetail = ({ item: listItem, onBack }) => {
     setDeleting(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/items/${detail.id}`, {
+      const res = await fetch(`${API_URL}/api/items/${detail.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

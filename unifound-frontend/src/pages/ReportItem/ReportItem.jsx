@@ -18,7 +18,7 @@ import { useSidebar } from "../../providers/SidebarProvider";
 import { useAuth } from "../../providers/AuthProvider";
 import "./ReportItem.css";
 
-const API_URL = "http://localhost:5000/api";
+const API_URL = "http://localhost:5000";
 
 const CATEGORIES = [
   "Electronics",
@@ -153,7 +153,7 @@ const ReportItem = ({ onSubmit, onCancel }) => {
       formData.append("description", form.description);
       if (form.image) formData.append("image", form.image);
 
-      const res = await fetch(`${API_URL}/items`, {
+      const res = await fetch(`${API_URL}/api/items`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}` },
         // Do NOT set Content-Type — browser sets it with boundary for multipart

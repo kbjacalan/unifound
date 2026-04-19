@@ -17,7 +17,7 @@ import {
 import { useSidebar } from "../../providers/SidebarProvider";
 import "./MyClaims.css";
 
-const API_BASE = "http://localhost:5000";
+const API_URL = "http://localhost:5000";
 
 const timeAgo = (dateStr) => {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -143,7 +143,7 @@ const MyClaims = () => {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/claims/mine`, {
+      const res = await fetch(`${API_URL}/api/claims/mine`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();

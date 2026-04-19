@@ -21,7 +21,7 @@ import EditItemForm from "../EditItemForm/EditItemForm";
 import ConfirmModal from "../ConfirmModal/ConfirmModal";
 import "./ItemList.css";
 
-const API_BASE = "http://localhost:5000";
+const API_URL = "http://localhost:5000";
 
 const STATUS_CONFIG = {
   lost: { label: "Lost", className: "status--lost" },
@@ -144,7 +144,7 @@ const ItemList = ({
     const fetchById = async () => {
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`${API_BASE}/api/items/${itemIdFromUrl}`, {
+        const res = await fetch(`${API_URL}/api/items/${itemIdFromUrl}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) return;
@@ -175,7 +175,7 @@ const ItemList = ({
           contactEmail: raw.contact_email ?? null,
           description: raw.description ?? "",
           referenceNumber: raw.reference_number ?? "—",
-          image: raw.image ? `${API_BASE}${raw.image}` : null,
+          image: raw.image ? `${API_URL}${raw.image}` : null,
         });
       } catch {
         /* silently fail */
@@ -209,7 +209,7 @@ const ItemList = ({
     setDeleting(true);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/items/${deleteItem.id}`, {
+      const res = await fetch(`${API_URL}/api/items/${deleteItem.id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });

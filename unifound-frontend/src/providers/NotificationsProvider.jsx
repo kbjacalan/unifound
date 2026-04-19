@@ -12,7 +12,7 @@ const NotificationsContext = createContext({
   refresh: () => {},
 });
 
-const API_BASE = "http://localhost:5000";
+const API_URL = "http://localhost:5000";
 
 export const NotificationsProvider = ({ children }) => {
   const { isAuthenticated } = useAuth();
@@ -25,7 +25,7 @@ export const NotificationsProvider = ({ children }) => {
     }
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/notifications`, {
+      const res = await fetch(`${API_URL}/api/notifications`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();

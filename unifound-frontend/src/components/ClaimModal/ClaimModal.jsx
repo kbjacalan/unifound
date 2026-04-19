@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import "./ClaimModal.css";
 
-const API_BASE = "http://localhost:5000";
+const API_URL = "http://localhost:5000";
 
 const ClaimModal = ({ item, onClose, onSubmitted }) => {
   const [message, setMessage] = useState("");
@@ -31,7 +31,7 @@ const ClaimModal = ({ item, onClose, onSubmitted }) => {
     setError(null);
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API_BASE}/api/claims`, {
+      const res = await fetch(`${API_URL}/api/claims`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import "./EditItemForm.css";
 
-const API_BASE = "http://localhost:5000";
+const API_URL = "http://localhost:5000";
 
 const CATEGORIES = [
   "Electronics",
@@ -118,7 +118,7 @@ const EditItemForm = ({ item, onClose, onSaved }) => {
       body.append("description", form.description.trim());
       if (imageFile) body.append("image", imageFile);
 
-      const res = await fetch(`${API_BASE}/api/items/${item.id}`, {
+      const res = await fetch(`${API_URL}/api/items/${item.id}`, {
         method: "PUT",
         headers: { Authorization: `Bearer ${token}` },
         body,
