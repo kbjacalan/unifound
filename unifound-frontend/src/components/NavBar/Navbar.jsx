@@ -1,12 +1,13 @@
 import { useState, useEffect, useRef } from "react";
 import "./Navbar.css";
 import Logo from "../../assets/logo.png";
-import { NavLink, Link, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 
 function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const navRef = useRef(null);
   const location = useLocation();
+  const navigate = useNavigate();
   useEffect(() => {
     setMenuOpen(false);
   }, [location]);
@@ -45,12 +46,17 @@ function Navbar() {
         <NavLink to="/contact">
           <li>Contact</li>
         </NavLink>
-        <button className="register-btn-mobile">Sign Up</button>
+        <button
+          className="register-btn-mobile"
+          onClick={() => navigate("/signup")}
+        >
+          Sign Up
+        </button>
       </ul>
 
-      <Link to="/signup">
-        <button className="register-btn">Sign Up</button>
-      </Link>
+      <button className="register-btn" onClick={() => navigate("/signup")}>
+        Sign Up
+      </button>
 
       <div
         className={`ham-menu ${menuOpen ? "active" : ""}`}

@@ -175,7 +175,7 @@ const ItemList = ({
           contactEmail: raw.contact_email ?? null,
           description: raw.description ?? "",
           referenceNumber: raw.reference_number ?? "—",
-          image: raw.image ? `${API_URL}${raw.image}` : null,
+          image: raw.image ?? null,
         });
       } catch {
         /* silently fail */

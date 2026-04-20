@@ -114,7 +114,7 @@ const ItemDetail = ({ item: listItem, onBack }) => {
             ? `${raw.reporter_first_name} ${raw.reporter_last_name}`
             : "Unknown",
         reporterEmail: raw.reporter_email ?? null,
-        image: raw.image ? `${API_URL}${raw.image}` : null,
+        image: raw.image ?? null,
         description:
           raw.description ||
           "No additional description has been provided for this item. If you have more information, please contact the reporter directly or reach out to the Lost & Found office.",

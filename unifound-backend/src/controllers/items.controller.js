@@ -1,6 +1,6 @@
-const fs = require("fs");
 const ItemsModel = require("../models/items.model");
 const { success, error } = require("../utils/apiResponse");
+const { uploadToSupabase } = require("../middlewares/upload.middleware");
 
 const createItem = async (req, res, next) => {
   try {
@@ -25,19 +25,17 @@ const createItem = async (req, res, next) => {
       errs.contactEmail = "Invalid email address.";
 
     if (Object.keys(errs).length) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return error(res, "Validation failed.", 400, errs);
     }
 
     const categoryId = await ItemsModel.getCategoryId(category);
     if (!categoryId) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return error(res, `Category "${category}" not found.`, 400);
     }
 
     const statusId = await ItemsModel.getStatusId(status);
     const refNumber = await ItemsModel.generateRefNumber();
-    const imagePath = req.file ? `/uploads/items/${req.file.filename}` : null;
+    const imagePath = req.file ? await uploadToSupabase(req.file) : null;
 
     const item = await ItemsModel.createItem({
       refNumber,
@@ -54,7 +52,6 @@ const createItem = async (req, res, next) => {
 
     return success(res, { item }, "Item reported successfully.", 201);
   } catch (err) {
-    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     next(err);
   }
 };
@@ -141,7 +138,6 @@ const updateItem = async (req, res, next) => {
     }
 
     if (Object.keys(errs).length) {
-      if (req.file) fs.unlinkSync(req.file.path);
       return error(res, "Validation failed.", 400, errs);
     }
 
@@ -149,7 +145,6 @@ const updateItem = async (req, res, next) => {
     if (category) {
       categoryId = await ItemsModel.getCategoryId(category);
       if (!categoryId) {
-        if (req.file) fs.unlinkSync(req.file.path);
         return error(res, `Category "${category}" not found.`, 400);
       }
     }
@@ -159,9 +154,7 @@ const updateItem = async (req, res, next) => {
       statusId = await ItemsModel.getStatusId(status);
     }
 
-    const imagePath = req.file
-      ? `/uploads/items/${req.file.filename}`
-      : undefined;
+    const imagePath = req.file ? await uploadToSupabase(req.file) : undefined;
 
     const item = await ItemsModel.updateItem(itemId, {
       name: name?.trim(),
@@ -178,7 +171,6 @@ const updateItem = async (req, res, next) => {
 
     return success(res, { item }, "Item updated successfully.");
   } catch (err) {
-    if (req.file && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
     if (err.message === "Item not found or not authorized.") {
       return error(res, err.message, 403);
     }

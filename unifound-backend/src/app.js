@@ -23,8 +23,6 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-
 app.get("/", (_req, res) => {
   res.json({ message: "UniFound API is running 🚀", status: "ok" });
 });
