@@ -88,7 +88,7 @@ const Browse = () => {
             ? `${item.reporter_first_name} ${item.reporter_last_name}`
             : "Unknown",
         reporterEmail: item.reporter_email ?? null,
-        image: raw.image ?? null,
+        image: item.image?.startsWith("http") ? item.image : null,
         description: item.description ?? null,
         contactEmail: item.contact_email ?? null,
         referenceNumber: item.reference_number ?? null,

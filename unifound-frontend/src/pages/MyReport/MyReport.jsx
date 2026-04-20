@@ -68,7 +68,7 @@ const MyReport = () => {
         contactEmail: item.contact_email ?? "",
         description: item.description ?? "",
         referenceNumber: item.reference_number ?? "—",
-        image: raw.image ?? null,
+        image: item.image?.startsWith("http") ? item.image : null,
       }));
 
       setAllItems(normalized);
