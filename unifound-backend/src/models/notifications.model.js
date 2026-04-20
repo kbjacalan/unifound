@@ -1,4 +1,5 @@
 const pool = require("../config/db");
+const { notifyUser } = require("../socket");
 
 const createNotification = async ({
   userId,
@@ -12,7 +13,20 @@ const createNotification = async ({
      VALUES (?, ?, ?, ?, ?)`,
     [userId, type, title, body, itemId],
   );
-  return result.insertId;
+  const insertId = result.insertId;
+
+  // Push real-time event to the user's socket room
+  notifyUser(userId, {
+    id: insertId,
+    type,
+    title,
+    body,
+    item_id: itemId,
+    is_read: 0,
+    created_at: new Date().toISOString(),
+  });
+
+  return insertId;
 };
 
 const findByUser = async (userId) => {
