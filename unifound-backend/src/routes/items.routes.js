@@ -9,7 +9,7 @@ const {
   deleteItem,
 } = require("../controllers/items.controller");
 const { authenticate } = require("../middlewares/auth.middleware");
-const upload = require("../middlewares/upload.middleware");
+const { upload } = require("../middlewares/upload.middleware");
 
 router.use(authenticate);
 
