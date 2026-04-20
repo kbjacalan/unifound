@@ -68,7 +68,7 @@ const MyReport = () => {
         contactEmail: item.contact_email ?? "",
         description: item.description ?? "",
         referenceNumber: item.reference_number ?? "—",
-        image: item.image ? `${API_URL}${item.image}` : null,
+        image: raw.image ?? null,
       }));
 
       setAllItems(normalized);
