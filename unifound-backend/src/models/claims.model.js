@@ -51,13 +51,6 @@ const createClaim = async ({ itemId, claimantId, message }) => {
       ? `${claimants[0].first_name} ${claimants[0].last_name}`
       : "A user";
 
-    // Log activity
-    await conn.query(
-      `INSERT INTO user_activity_log (user_id, action, entity_type, entity_id)
-       VALUES (?, 'claim_item', 'claim', ?)`,
-      [claimantId, claimId],
-    );
-
     await conn.commit();
 
     // Notify the reporter (finder) — outside the transaction is fine
