@@ -21,17 +21,36 @@ const signup = async (req, res, next) => {
     if (await AuthModel.emailExists(email))
       return error(res, "Email is already registered.", 409);
 
+    // 1. Create the user
     const user = await AuthModel.createUser(
       first_name,
       last_name,
       email,
-      password, // plain — Supabase Auth hashes it
+      password,
       role,
     );
 
-    return success(res, { user }, "Account created successfully.", 201);
+    // 2. Auto sign-in to return a token immediately after signup
+    const session = await AuthModel.signIn(email, password);
+    if (!session)
+      return error(
+        res,
+        "Account created but sign-in failed. Please log in manually.",
+        500,
+      );
+
+    await AuthModel.updateLastLogin(user.id);
+
+    return success(
+      res,
+      {
+        token: session.session.access_token,
+        user,
+      },
+      "Account created successfully.",
+      201,
+    );
   } catch (err) {
-    // Surface Supabase-specific messages cleanly
     if (err.message?.toLowerCase().includes("already registered"))
       return error(res, "Email is already registered.", 409);
     next(err);
