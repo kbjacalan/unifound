@@ -1,14 +1,8 @@
-const mysql = require("mysql2/promise");
+const { createClient } = require("@supabase/supabase-js");
 
-const pool = mysql.createPool({
-  host: process.env.MYSQLHOST,
-  port: process.env.MYSQLPORT,
-  user: process.env.MYSQLUSER,
-  password: process.env.MYSQLPASSWORD,
-  database: process.env.MYSQLDATABASE,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY, // service key — bypasses RLS for server-side ops
+);
 
-module.exports = pool;
+module.exports = supabase;

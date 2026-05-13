@@ -1,286 +1,359 @@
-const pool = require("../config/db");
+const supabase = require("../config/db");
 const NotificationsModel = require("./notifications.model");
 
 /**
- * Submit a new claim. Returns the created claim row.
+ * Submit a new claim.
  */
 const createClaim = async ({ itemId, claimantId, message }) => {
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
+  // 1. Fetch item + status
+  const { data: item, error: itemError } = await supabase
+    .from("items")
+    .select("id, name, reporter_id, item_statuses ( name )")
+    .eq("id", itemId)
+    .eq("is_active", true)
+    .single();
 
-    // Fetch item + reporter info in one query
-    const [items] = await conn.query(
-      `SELECT i.id, i.name, i.reporter_id, s.name AS status
-       FROM items i
-       JOIN item_statuses s ON s.id = i.status_id
-       WHERE i.id = ? AND i.is_active = 1
-       LIMIT 1`,
-      [itemId],
-    );
+  if (itemError || !item) throw new Error("Item not found.");
 
-    if (!items.length) throw new Error("Item not found.");
-    const item = items[0];
+  if (item.reporter_id === claimantId)
+    throw new Error("You cannot claim your own report.");
 
-    if (item.reporter_id === claimantId)
-      throw new Error("You cannot claim your own report.");
+  const statusName = item.item_statuses?.name;
+  if (statusName !== "lost" && statusName !== "found")
+    throw new Error("This item is no longer accepting claims.");
 
-    if (item.status !== "lost" && item.status !== "found")
-      throw new Error("This item is no longer accepting claims.");
+  // 2. Prevent duplicate pending claim
+  const { count: existingCount } = await supabase
+    .from("claims")
+    .select("id", { count: "exact", head: true })
+    .eq("item_id", itemId)
+    .eq("claimant_id", claimantId)
+    .eq("status", "pending");
 
-    // Prevent duplicate pending claim from same user
-    const [existing] = await conn.query(
-      "SELECT id FROM claims WHERE item_id = ? AND claimant_id = ? AND status = 'pending' LIMIT 1",
-      [itemId, claimantId],
-    );
-    if (existing.length)
-      throw new Error("You already have a pending claim on this item.");
+  if (existingCount > 0)
+    throw new Error("You already have a pending claim on this item.");
 
-    const [result] = await conn.query(
-      "INSERT INTO claims (item_id, claimant_id, message) VALUES (?, ?, ?)",
-      [itemId, claimantId, message || null],
-    );
-    const claimId = result.insertId;
+  // 3. Insert claim
+  const { data: claim, error: claimError } = await supabase
+    .from("claims")
+    .insert({
+      item_id: itemId,
+      claimant_id: claimantId,
+      message: message || null,
+    })
+    .select("id")
+    .single();
 
-    // Fetch claimant name for notification body
-    const [claimants] = await conn.query(
-      "SELECT first_name, last_name FROM users WHERE id = ? LIMIT 1",
-      [claimantId],
-    );
-    const claimantName = claimants.length
-      ? `${claimants[0].first_name} ${claimants[0].last_name}`
-      : "A user";
+  if (claimError) throw new Error(claimError.message);
 
-    await conn.commit();
+  // 4. Fetch claimant name for notification
+  const { data: claimant } = await supabase
+    .from("users")
+    .select("first_name, last_name")
+    .eq("id", claimantId)
+    .single();
 
-    // Notify the reporter (finder) — outside the transaction is fine
-    await NotificationsModel.createNotification({
-      userId: item.reporter_id,
-      type: "message",
-      title: `Someone claims "${item.name}"`,
-      body: `${claimantName} has submitted a claim and has been given your contact info. Approve once the item is physically returned.`,
-      itemId,
-    });
+  const claimantName = claimant
+    ? `${claimant.first_name} ${claimant.last_name}`
+    : "A user";
 
-    return claimId;
-  } catch (err) {
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
-  }
+  // 5. Notify reporter
+  await NotificationsModel.createNotification({
+    userId: item.reporter_id,
+    type: "message",
+    title: `Someone claims "${item.name}"`,
+    body: `${claimantName} has submitted a claim and has been given your contact info. Approve once the item is physically returned.`,
+    itemId,
+  });
+
+  return claim.id;
 };
 
 /**
  * Get all pending claims on items reported by `reporterId`.
  */
 const findIncomingClaims = async (reporterId) => {
-  const [rows] = await pool.query(
-    `SELECT
-       c.id,
-       c.item_id,
-       c.message,
-       c.status,
-       c.created_at,
-       i.name          AS item_name,
-       i.reference_number,
-       u.first_name    AS claimant_first_name,
-       u.last_name     AS claimant_last_name,
-       u.email         AS claimant_email,
-       u.avatar_initials
-     FROM claims c
-     JOIN items i ON i.id = c.item_id
-     JOIN users u ON u.id = c.claimant_id
-     WHERE i.reporter_id = ? AND c.status = 'pending'
-     ORDER BY c.created_at DESC`,
-    [reporterId],
-  );
-  return rows;
+  // First get item IDs reported by this user
+  const { data: reporterItems, error: itemsError } = await supabase
+    .from("items")
+    .select("id")
+    .eq("reporter_id", reporterId)
+    .eq("is_active", true);
+
+  if (itemsError) throw new Error(itemsError.message);
+  if (!reporterItems?.length) return [];
+
+  const itemIds = reporterItems.map((i) => i.id);
+
+  const { data, error } = await supabase
+    .from("claims")
+    .select(
+      `
+      id,
+      item_id,
+      message,
+      status,
+      created_at,
+      items ( name, reference_number ),
+      users ( first_name, last_name, email, avatar_initials )
+    `,
+    )
+    .in("item_id", itemIds)
+    .eq("status", "pending")
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    item_id: row.item_id,
+    message: row.message,
+    status: row.status,
+    created_at: row.created_at,
+    item_name: row.items?.name ?? null,
+    reference_number: row.items?.reference_number ?? null,
+    claimant_first_name: row.users?.first_name ?? null,
+    claimant_last_name: row.users?.last_name ?? null,
+    claimant_email: row.users?.email ?? null,
+    avatar_initials: row.users?.avatar_initials ?? null,
+  }));
 };
 
 /**
- * Get a specific item's claims (all statuses) for the reporter.
+ * Get all claims (all statuses) for a specific item — reporter only.
  */
 const findClaimsByItem = async (itemId, reporterId) => {
-  const [rows] = await pool.query(
-    `SELECT
-       c.id,
-       c.item_id,
-       c.message,
-       c.status,
-       c.created_at,
-       u.first_name    AS claimant_first_name,
-       u.last_name     AS claimant_last_name,
-       u.email         AS claimant_email,
-       u.avatar_initials
-     FROM claims c
-     JOIN items i ON i.id = c.item_id
-     JOIN users u ON u.id = c.claimant_id
-     WHERE c.item_id = ? AND i.reporter_id = ?
-     ORDER BY c.created_at DESC`,
-    [itemId, reporterId],
-  );
-  return rows;
+  // Verify ownership first
+  const { data: itemCheck } = await supabase
+    .from("items")
+    .select("id")
+    .eq("id", itemId)
+    .eq("reporter_id", reporterId)
+    .maybeSingle();
+
+  if (!itemCheck) throw new Error("Item not found or not authorized.");
+
+  const { data, error } = await supabase
+    .from("claims")
+    .select(
+      `
+      id,
+      item_id,
+      message,
+      status,
+      created_at,
+      users ( first_name, last_name, email, avatar_initials )
+    `,
+    )
+    .eq("item_id", itemId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    item_id: row.item_id,
+    message: row.message,
+    status: row.status,
+    created_at: row.created_at,
+    claimant_first_name: row.users?.first_name ?? null,
+    claimant_last_name: row.users?.last_name ?? null,
+    claimant_email: row.users?.email ?? null,
+    avatar_initials: row.users?.avatar_initials ?? null,
+  }));
 };
 
 /**
- * Get claims made BY the logged-in user (their claim history).
+ * Get claims made BY the logged-in user.
  */
 const findMyClaims = async (claimantId) => {
-  const [rows] = await pool.query(
-    `SELECT
-       c.id,
-       c.item_id,
-       c.message,
-       c.status,
-       c.created_at,
-       c.reviewed_at,
-       i.name          AS item_name,
-       i.reference_number,
-       s.label         AS item_status_label,
-       u.first_name    AS reporter_first_name,
-       u.last_name     AS reporter_last_name
-     FROM claims c
-     JOIN items i ON i.id = c.item_id
-     JOIN item_statuses s ON s.id = i.status_id
-     JOIN users u ON u.id = i.reporter_id
-     WHERE c.claimant_id = ?
-     ORDER BY c.created_at DESC`,
-    [claimantId],
-  );
-  return rows;
+  const { data, error } = await supabase
+    .from("claims")
+    .select(
+      `
+      id,
+      item_id,
+      message,
+      status,
+      created_at,
+      reviewed_at,
+      items (
+        name,
+        reference_number,
+        item_statuses ( label ),
+        users ( first_name, last_name )
+      )
+    `,
+    )
+    .eq("claimant_id", claimantId)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+
+  return (data ?? []).map((row) => ({
+    id: row.id,
+    item_id: row.item_id,
+    message: row.message,
+    status: row.status,
+    created_at: row.created_at,
+    reviewed_at: row.reviewed_at ?? null,
+    item_name: row.items?.name ?? null,
+    reference_number: row.items?.reference_number ?? null,
+    item_status_label: row.items?.item_statuses?.label ?? null,
+    reporter_first_name: row.items?.users?.first_name ?? null,
+    reporter_last_name: row.items?.users?.last_name ?? null,
+  }));
 };
 
 /**
- * Approve a claim. Updates claim, item status → claimed, notifies claimant.
+ * Approve a claim — marks item as claimed, rejects other pending claims.
  */
 const approveClaim = async (claimId, reporterId) => {
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
+  // 1. Fetch the claim
+  const { data: claim, error: claimError } = await supabase
+    .from("claims")
+    .select("id, claimant_id, item_id")
+    .eq("id", claimId)
+    .eq("status", "pending")
+    .maybeSingle();
 
-    // Verify the claim belongs to an item owned by reporter
-    const [claims] = await conn.query(
-      `SELECT c.id, c.claimant_id, c.item_id, i.name AS item_name, i.status_id
-       FROM claims c
-       JOIN items i ON i.id = c.item_id
-       WHERE c.id = ? AND i.reporter_id = ? AND c.status = 'pending'
-       LIMIT 1`,
-      [claimId, reporterId],
-    );
-    if (!claims.length)
-      throw new Error("Claim not found or you are not authorized.");
+  if (claimError || !claim)
+    throw new Error("Claim not found or you are not authorized.");
 
-    const claim = claims[0];
+  // 2. Verify the item belongs to the reporter
+  const { data: item, error: itemError } = await supabase
+    .from("items")
+    .select("name, status_id, reporter_id")
+    .eq("id", claim.item_id)
+    .eq("reporter_id", reporterId)
+    .maybeSingle();
 
-    // Get 'claimed' status id
-    const [statuses] = await conn.query(
-      "SELECT id FROM item_statuses WHERE name = 'claimed' LIMIT 1",
-    );
-    const claimedStatusId = statuses[0].id;
+  if (itemError || !item)
+    throw new Error("Claim not found or you are not authorized.");
 
-    // Update claim status
-    await conn.query(
-      "UPDATE claims SET status = 'approved', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?",
-      [reporterId, claimId],
-    );
+  // 2. Get 'claimed' status id
+  const { data: claimedStatus } = await supabase
+    .from("item_statuses")
+    .select("id")
+    .eq("name", "claimed")
+    .single();
 
-    // Reject all other pending claims on same item
-    await conn.query(
-      `UPDATE claims SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW()
-       WHERE item_id = ? AND id != ? AND status = 'pending'`,
-      [reporterId, claim.item_id, claimId],
-    );
+  const claimedStatusId = claimedStatus.id;
+  const oldStatusId = item.status_id;
 
-    // Update item status to claimed
-    const oldStatusId = claim.status_id;
-    await conn.query(
-      "UPDATE items SET status_id = ?, updated_at = NOW() WHERE id = ?",
-      [claimedStatusId, claim.item_id],
-    );
+  // 3. Approve this claim
+  const { error: approveError } = await supabase
+    .from("claims")
+    .update({
+      status: "approved",
+      reviewed_by: reporterId,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", claimId);
 
-    // Log status history
-    await conn.query(
-      `INSERT INTO item_status_history (item_id, old_status_id, new_status_id, changed_by)
-       VALUES (?, ?, ?, ?)`,
-      [claim.item_id, oldStatusId, claimedStatusId, reporterId],
-    );
+  if (approveError) throw new Error(approveError.message);
 
-    await conn.commit();
+  // 4. Reject all other pending claims on the same item
+  await supabase
+    .from("claims")
+    .update({
+      status: "rejected",
+      reviewed_by: reporterId,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("item_id", claim.item_id)
+    .neq("id", claimId)
+    .eq("status", "pending");
 
-    // Notify claimant of approval
-    await NotificationsModel.createNotification({
-      userId: claim.claimant_id,
-      type: "claimed",
-      title: `Your claim was approved! 🎉`,
-      body: `The reporter has confirmed the handoff for "${claim.item_name}". This case is now closed.`,
-      itemId: claim.item_id,
-    });
+  // 5. Update item status to claimed
+  await supabase
+    .from("items")
+    .update({ status_id: claimedStatusId })
+    .eq("id", claim.item_id);
 
-    return true;
-  } catch (err) {
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
-  }
+  // 6. Log status history
+  await supabase.from("item_status_history").insert({
+    item_id: claim.item_id,
+    old_status_id: oldStatusId,
+    new_status_id: claimedStatusId,
+    changed_by: reporterId,
+  });
+
+  // 7. Notify claimant
+  await NotificationsModel.createNotification({
+    userId: claim.claimant_id,
+    type: "claimed",
+    title: `Your claim was approved! 🎉`,
+    body: `The reporter has confirmed the handoff for "${item.name}". This case is now closed.`,
+    itemId: claim.item_id,
+  });
+
+  return true;
 };
 
 /**
- * Reject a claim. Notifies claimant.
+ * Reject a claim.
  */
 const rejectClaim = async (claimId, reporterId) => {
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
+  // 1. Fetch the claim
+  const { data: claim, error: claimError } = await supabase
+    .from("claims")
+    .select("id, claimant_id, item_id")
+    .eq("id", claimId)
+    .eq("status", "pending")
+    .maybeSingle();
 
-    const [claims] = await conn.query(
-      `SELECT c.id, c.claimant_id, c.item_id, i.name AS item_name
-       FROM claims c
-       JOIN items i ON i.id = c.item_id
-       WHERE c.id = ? AND i.reporter_id = ? AND c.status = 'pending'
-       LIMIT 1`,
-      [claimId, reporterId],
-    );
-    if (!claims.length)
-      throw new Error("Claim not found or you are not authorized.");
+  if (claimError || !claim)
+    throw new Error("Claim not found or you are not authorized.");
 
-    const claim = claims[0];
+  // 2. Verify item belongs to reporter
+  const { data: item, error: itemError } = await supabase
+    .from("items")
+    .select("name, reporter_id")
+    .eq("id", claim.item_id)
+    .eq("reporter_id", reporterId)
+    .maybeSingle();
 
-    await conn.query(
-      "UPDATE claims SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?",
-      [reporterId, claimId],
-    );
+  if (itemError || !item)
+    throw new Error("Claim not found or you are not authorized.");
 
-    await conn.commit();
+  const { error: rejectError } = await supabase
+    .from("claims")
+    .update({
+      status: "rejected",
+      reviewed_by: reporterId,
+      reviewed_at: new Date().toISOString(),
+    })
+    .eq("id", claimId);
 
-    // Notify claimant of rejection
-    await NotificationsModel.createNotification({
-      userId: claim.claimant_id,
-      type: "alert",
-      title: `Your claim was not approved`,
-      body: `Your claim for "${claim.item_name}" was reviewed and rejected by the reporter.`,
-      itemId: claim.item_id,
-    });
+  if (rejectError) throw new Error(rejectError.message);
 
-    return true;
-  } catch (err) {
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
-  }
+  await NotificationsModel.createNotification({
+    userId: claim.claimant_id,
+    type: "alert",
+    title: `Your claim was not approved`,
+    body: `Your claim for "${item.name}" was reviewed and rejected by the reporter.`,
+    itemId: claim.item_id,
+  });
+
+  return true;
 };
 
 /**
- * Check if a user has an existing pending claim on a specific item.
+ * Check if a user has an existing claim on a specific item.
  */
 const findExistingClaim = async (itemId, claimantId) => {
-  const [rows] = await pool.query(
-    "SELECT id, status FROM claims WHERE item_id = ? AND claimant_id = ? ORDER BY created_at DESC LIMIT 1",
-    [itemId, claimantId],
-  );
-  return rows[0] ?? null;
+  const { data, error } = await supabase
+    .from("claims")
+    .select("id, status")
+    .eq("item_id", itemId)
+    .eq("claimant_id", claimantId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return null;
+  return data;
 };
 
 module.exports = {

@@ -1,4 +1,4 @@
-const pool = require("../config/db");
+const supabase = require("../config/db");
 const { notifyUser } = require("../socket");
 
 const createNotification = async ({
@@ -8,69 +8,89 @@ const createNotification = async ({
   body,
   itemId = null,
 }) => {
-  const [result] = await pool.query(
-    `INSERT INTO notifications (user_id, type, title, body, item_id)
-     VALUES (?, ?, ?, ?, ?)`,
-    [userId, type, title, body, itemId],
-  );
-  const insertId = result.insertId;
+  const { data, error } = await supabase
+    .from("notifications")
+    .insert({
+      user_id: userId,
+      type,
+      title,
+      body,
+      item_id: itemId,
+    })
+    .select("id")
+    .single();
+
+  if (error) throw new Error(error.message);
 
   // Push real-time event to the user's socket room
   notifyUser(userId, {
-    id: insertId,
+    id: data.id,
     type,
     title,
     body,
     item_id: itemId,
-    is_read: 0,
+    is_read: false,
     created_at: new Date().toISOString(),
   });
 
-  return insertId;
+  return data.id;
 };
 
 const findByUser = async (userId) => {
-  const [rows] = await pool.query(
-    `SELECT id, type, title, body, is_read, item_id,
-            created_at
-     FROM notifications
-     WHERE user_id = ?
-     ORDER BY created_at DESC
-     LIMIT 100`,
-    [userId],
-  );
-  return rows;
+  const { data, error } = await supabase
+    .from("notifications")
+    .select("id, type, title, body, is_read, item_id, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
 };
 
 const markRead = async (notifId, userId) => {
-  const [result] = await pool.query(
-    "UPDATE notifications SET is_read = 1 WHERE id = ? AND user_id = ?",
-    [notifId, userId],
-  );
-  if (result.affectedRows === 0) throw new Error("Notification not found.");
+  const { error, count } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("id", notifId)
+    .eq("user_id", userId)
+    .select("id", { count: "exact", head: true });
+
+  if (error) throw new Error(error.message);
+  if (count === 0) throw new Error("Notification not found.");
 };
 
 const markAllRead = async (userId) => {
-  await pool.query(
-    "UPDATE notifications SET is_read = 1 WHERE user_id = ? AND is_read = 0",
-    [userId],
-  );
+  const { error } = await supabase
+    .from("notifications")
+    .update({ is_read: true })
+    .eq("user_id", userId)
+    .eq("is_read", false);
+
+  if (error) throw new Error(error.message);
 };
 
 const deleteNotification = async (notifId, userId) => {
-  const [result] = await pool.query(
-    "DELETE FROM notifications WHERE id = ? AND user_id = ?",
-    [notifId, userId],
-  );
-  if (result.affectedRows === 0) throw new Error("Notification not found.");
+  const { error, count } = await supabase
+    .from("notifications")
+    .delete()
+    .eq("id", notifId)
+    .eq("user_id", userId)
+    .select("id", { count: "exact", head: true });
+
+  if (error) throw new Error(error.message);
+  if (count === 0) throw new Error("Notification not found.");
 };
 
 const countUnread = async (userId) => {
-  const [rows] = await pool.query(
-    "SELECT COUNT(*) AS total FROM notifications WHERE user_id = ? AND is_read = 0",
-    [userId],
-  );
-  return rows[0].total;
+  const { count, error } = await supabase
+    .from("notifications")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("is_read", false);
+
+  if (error) throw new Error(error.message);
+  return count ?? 0;
 };
 
 module.exports = {

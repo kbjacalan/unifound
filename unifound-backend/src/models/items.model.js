@@ -1,65 +1,80 @@
-const pool = require("../config/db");
+const supabase = require("../config/db");
 
 const getCategoryId = async (categoryName) => {
-  const [rows] = await pool.query(
-    "SELECT id FROM categories WHERE name = ? LIMIT 1",
-    [categoryName],
-  );
-  return rows[0]?.id ?? null;
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id")
+    .eq("name", categoryName)
+    .single();
+
+  if (error || !data) return null;
+  return data.id;
 };
 
 const getStatusId = async (statusName = "lost") => {
-  const [rows] = await pool.query(
-    "SELECT id FROM item_statuses WHERE name = ? LIMIT 1",
-    [statusName],
-  );
-  return rows[0]?.id ?? 1;
+  const { data, error } = await supabase
+    .from("item_statuses")
+    .select("id")
+    .eq("name", statusName)
+    .single();
+
+  if (error || !data) return 1;
+  return data.id;
 };
 
 const generateRefNumber = async () => {
   const year = new Date().getFullYear();
-  const [rows] = await pool.query(
-    "SELECT COUNT(*) AS total FROM items WHERE YEAR(created_at) = ?",
-    [year],
-  );
-  const next = (rows[0].total + 1).toString().padStart(4, "0");
+  const start = `${year}-01-01`;
+  const end = `${year}-12-31`;
+
+  const { count } = await supabase
+    .from("items")
+    .select("id", { count: "exact", head: true })
+    .gte("created_at", start)
+    .lte("created_at", end);
+
+  const next = ((count ?? 0) + 1).toString().padStart(4, "0");
   return `LF-${year}-${next}`;
 };
 
 const findById = async (itemId) => {
-  const [rows] = await pool.query(
-    `SELECT
-       i.id,
-       i.reference_number,
-       i.name,
-       i.description,
-       c.name          AS category,
-       s.name          AS status,
-       s.label         AS status_label,
-       i.location,
-       i.date_reported,
-       i.time_reported,
-       i.contact_email,
-       i.created_at,
-       i.reporter_id,
-       u.first_name    AS reporter_first_name,
-       u.last_name     AS reporter_last_name,
-       u.email         AS reporter_email,
-       u.avatar_initials,
-       img.image_path  AS image
-     FROM items i
-     JOIN categories    c   ON c.id  = i.category_id
-     JOIN item_statuses s   ON s.id  = i.status_id
-     JOIN users         u   ON u.id  = i.reporter_id
-     LEFT JOIN item_images img
-       ON img.item_id = i.id AND img.is_primary = 1
-     WHERE i.id = ?
-     LIMIT 1`,
-    [itemId],
-  );
-  return rows[0] ?? null;
+  const { data, error } = await supabase
+    .from("items")
+    .select(
+      `
+      id,
+      reference_number,
+      name,
+      description,
+      location,
+      date_reported,
+      time_reported,
+      contact_email,
+      created_at,
+      reporter_id,
+      categories ( name ),
+      item_statuses ( name, label ),
+      users (
+        first_name,
+        last_name,
+        email,
+        avatar_initials
+      ),
+      item_images ( image_path, is_primary )
+    `,
+    )
+    .eq("id", itemId)
+    .maybeSingle();
+
+  if (error || !data) return null;
+  return _shape(data);
 };
 
+/**
+ * Create an item, optional primary image, and initial status history
+ * — all in sequence (Supabase JS v2 has no built-in transactions;
+ *   we throw on any error so the caller can surface it).
+ */
 const createItem = async ({
   refNumber,
   name,
@@ -72,52 +87,49 @@ const createItem = async ({
   contactEmail,
   imagePath = null,
 }) => {
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
+  // 1. Insert item
+  const { data: item, error: itemError } = await supabase
+    .from("items")
+    .insert({
+      reference_number: refNumber,
+      name,
+      description,
+      category_id: categoryId,
+      status_id: statusId,
+      location,
+      date_reported: dateReported,
+      reporter_id: reporterId,
+      contact_email: contactEmail,
+    })
+    .select("id")
+    .single();
 
-    const [result] = await conn.query(
-      `INSERT INTO items
-         (reference_number, name, description, category_id, status_id,
-          location, date_reported, reporter_id, contact_email)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        refNumber,
-        name,
-        description,
-        categoryId,
-        statusId,
-        location,
-        dateReported,
-        reporterId,
-        contactEmail,
-      ],
-    );
+  if (itemError) throw new Error(itemError.message);
 
-    const itemId = result.insertId;
+  const itemId = item.id;
 
-    if (imagePath) {
-      await conn.query(
-        "INSERT INTO item_images (item_id, image_path, is_primary) VALUES (?, ?, 1)",
-        [itemId, imagePath],
-      );
-    }
+  // 2. Insert primary image if provided
+  if (imagePath) {
+    const { error: imgError } = await supabase
+      .from("item_images")
+      .insert({ item_id: itemId, image_path: imagePath, is_primary: true });
 
-    await conn.query(
-      `INSERT INTO item_status_history
-         (item_id, old_status_id, new_status_id, changed_by)
-       VALUES (?, NULL, ?, ?)`,
-      [itemId, statusId, reporterId],
-    );
-
-    await conn.commit();
-    return await findById(itemId);
-  } catch (err) {
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
+    if (imgError) throw new Error(imgError.message);
   }
+
+  // 3. Log initial status history
+  const { error: historyError } = await supabase
+    .from("item_status_history")
+    .insert({
+      item_id: itemId,
+      old_status_id: null,
+      new_status_id: statusId,
+      changed_by: reporterId,
+    });
+
+  if (historyError) throw new Error(historyError.message);
+
+  return await findById(itemId);
 };
 
 const findAll = async ({
@@ -128,88 +140,112 @@ const findAll = async ({
   limit = 12,
   offset = 0,
 }) => {
-  let where = "WHERE i.is_active = 1";
-  const params = [];
+  const orderMap = {
+    newest: { column: "created_at", ascending: false },
+    oldest: { column: "created_at", ascending: true },
+    name_asc: { column: "name", ascending: true },
+    name_desc: { column: "name", ascending: false },
+  };
+  const order = orderMap[sort] ?? orderMap.newest;
+
+  // Resolve status/category names to IDs upfront to avoid
+  // unreliable joined-column filtering in Supabase JS v2
+  let statusId = null;
+  let categoryId = null;
 
   if (status) {
-    where += " AND s.name = ?";
-    params.push(status);
+    const { data: s } = await supabase
+      .from("item_statuses")
+      .select("id")
+      .eq("name", status)
+      .maybeSingle();
+    statusId = s?.id ?? null;
   }
+
   if (category) {
-    where += " AND c.name = ?";
-    params.push(category);
+    const { data: c } = await supabase
+      .from("categories")
+      .select("id")
+      .eq("name", category)
+      .maybeSingle();
+    categoryId = c?.id ?? null;
   }
+
+  let query = supabase
+    .from("items")
+    .select(
+      `
+      id,
+      reference_number,
+      name,
+      location,
+      date_reported,
+      contact_email,
+      created_at,
+      reporter_id,
+      description,
+      categories ( name ),
+      item_statuses ( name, label ),
+      users (
+        first_name,
+        last_name,
+        email,
+        avatar_initials
+      ),
+      item_images ( image_path, is_primary )
+    `,
+      { count: "exact" },
+    )
+    .eq("is_active", true)
+    .order(order.column, { ascending: order.ascending })
+    .range(offset, offset + limit - 1);
+
+  if (statusId) query = query.eq("status_id", statusId);
+  if (categoryId) query = query.eq("category_id", categoryId);
+
   if (search) {
-    where +=
-      " AND MATCH(i.name, i.description, i.location) AGAINST(? IN BOOLEAN MODE)";
-    params.push(`${search}*`);
+    query = query.or(
+      `name.ilike.%${search}%,description.ilike.%${search}%,location.ilike.%${search}%`,
+    );
   }
 
-  const orderMap = {
-    newest: "i.created_at DESC",
-    oldest: "i.created_at ASC",
-    name_asc: "i.name ASC",
-    name_desc: "i.name DESC",
-  };
-  const order = orderMap[sort] ?? "i.created_at DESC";
+  const { data, error, count } = await query;
+  if (error) throw new Error(error.message);
 
-  const [items] = await pool.query(
-    `SELECT
-       i.id, i.reference_number, i.name,
-       c.name AS category,
-       s.name AS status, s.label AS status_label,
-       i.location, i.date_reported, i.contact_email, i.created_at,
-       i.reporter_id,
-       u.first_name AS reporter_first_name,
-       u.last_name  AS reporter_last_name,
-       u.email      AS reporter_email,
-       u.avatar_initials,
-       img.image_path AS image
-     FROM items i
-     JOIN categories    c   ON c.id = i.category_id
-     JOIN item_statuses s   ON s.id = i.status_id
-     JOIN users         u   ON u.id = i.reporter_id
-     LEFT JOIN item_images img ON img.item_id = i.id AND img.is_primary = 1
-     ${where}
-     ORDER BY ${order}
-     LIMIT ? OFFSET ?`,
-    [...params, limit, offset],
-  );
-
-  const [countRes] = await pool.query(
-    `SELECT COUNT(*) AS total
-     FROM items i
-     JOIN categories    c ON c.id = i.category_id
-     JOIN item_statuses s ON s.id = i.status_id
-     ${where}`,
-    params,
-  );
-
-  return { items, total: countRes[0].total };
+  return { items: (data ?? []).map(_shape), total: count ?? 0 };
 };
 
 const findByReporter = async (reporterId) => {
-  const [rows] = await pool.query(
-    `SELECT
-       i.id, i.reference_number, i.name,
-       c.name AS category,
-       s.name AS status, s.label AS status_label,
-       i.location, i.date_reported, i.contact_email, i.description, i.created_at,
-       i.reporter_id,
-       u.first_name AS reporter_first_name,
-       u.last_name  AS reporter_last_name,
-       u.email      AS reporter_email,
-       img.image_path AS image
-     FROM items i
-     JOIN categories    c   ON c.id = i.category_id
-     JOIN item_statuses s   ON s.id = i.status_id
-     JOIN users         u   ON u.id = i.reporter_id
-     LEFT JOIN item_images img ON img.item_id = i.id AND img.is_primary = 1
-     WHERE i.reporter_id = ? AND i.is_active = 1
-     ORDER BY i.created_at DESC`,
-    [reporterId],
-  );
-  return rows;
+  const { data, error } = await supabase
+    .from("items")
+    .select(
+      `
+      id,
+      reference_number,
+      name,
+      description,
+      location,
+      date_reported,
+      contact_email,
+      created_at,
+      reporter_id,
+      categories ( name ),
+      item_statuses ( name, label ),
+      users (
+        first_name,
+        last_name,
+        email,
+        avatar_initials
+      ),
+      item_images ( image_path, is_primary )
+    `,
+    )
+    .eq("reporter_id", reporterId)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(_shape);
 };
 
 const updateItem = async (
@@ -226,106 +262,117 @@ const updateItem = async (
     reporterId,
   },
 ) => {
-  const conn = await pool.getConnection();
-  try {
-    await conn.beginTransaction();
+  // 1. Fetch current item to verify ownership + get old status
+  const { data: current, error: fetchError } = await supabase
+    .from("items")
+    .select("status_id")
+    .eq("id", itemId)
+    .eq("reporter_id", reporterId)
+    .maybeSingle();
 
-    const [current] = await conn.query(
-      "SELECT status_id FROM items WHERE id = ? AND reporter_id = ? LIMIT 1",
-      [itemId, reporterId],
-    );
-    if (!current.length) throw new Error("Item not found or not authorized.");
-    const oldStatusId = current[0].status_id;
+  if (fetchError || !current)
+    throw new Error("Item not found or not authorized.");
 
-    const fields = [];
-    const values = [];
+  const oldStatusId = current.status_id;
 
-    if (name !== undefined) {
-      fields.push("name = ?");
-      values.push(name);
-    }
-    if (description !== undefined) {
-      fields.push("description = ?");
-      values.push(description);
-    }
-    if (categoryId !== undefined) {
-      fields.push("category_id = ?");
-      values.push(categoryId);
-    }
-    if (statusId !== undefined) {
-      fields.push("status_id = ?");
-      values.push(statusId);
-    }
-    if (location !== undefined) {
-      fields.push("location = ?");
-      values.push(location);
-    }
-    if (dateReported !== undefined) {
-      fields.push("date_reported = ?");
-      values.push(dateReported);
-    }
-    if (contactEmail !== undefined) {
-      fields.push("contact_email = ?");
-      values.push(contactEmail);
-    }
+  // 2. Build update payload — only include defined fields
+  const patch = {};
+  if (name !== undefined) patch.name = name;
+  if (description !== undefined) patch.description = description;
+  if (categoryId !== undefined) patch.category_id = categoryId;
+  if (statusId !== undefined) patch.status_id = statusId;
+  if (location !== undefined) patch.location = location;
+  if (dateReported !== undefined) patch.date_reported = dateReported;
+  if (contactEmail !== undefined) patch.contact_email = contactEmail;
 
-    fields.push("updated_at = NOW()");
-    values.push(itemId, reporterId);
+  if (Object.keys(patch).length > 0) {
+    const { error: updateError } = await supabase
+      .from("items")
+      .update(patch)
+      .eq("id", itemId)
+      .eq("reporter_id", reporterId);
 
-    await conn.query(
-      `UPDATE items SET ${fields.join(", ")} WHERE id = ? AND reporter_id = ?`,
-      values,
-    );
-
-    if (imagePath !== undefined && imagePath !== null) {
-      const [existing] = await conn.query(
-        "SELECT id, image_path FROM item_images WHERE item_id = ? AND is_primary = 1 LIMIT 1",
-        [itemId],
-      );
-      if (existing.length) {
-        const oldPath = require("path").join(
-          process.cwd(),
-          existing[0].image_path,
-        );
-        if (require("fs").existsSync(oldPath))
-          require("fs").unlinkSync(oldPath);
-        await conn.query(
-          "UPDATE item_images SET image_path = ?, uploaded_at = NOW() WHERE id = ?",
-          [imagePath, existing[0].id],
-        );
-      } else {
-        await conn.query(
-          "INSERT INTO item_images (item_id, image_path, is_primary) VALUES (?, ?, 1)",
-          [itemId, imagePath],
-        );
-      }
-    }
-
-    if (statusId !== undefined && statusId !== oldStatusId) {
-      await conn.query(
-        `INSERT INTO item_status_history (item_id, old_status_id, new_status_id, changed_by)
-         VALUES (?, ?, ?, ?)`,
-        [itemId, oldStatusId, statusId, reporterId],
-      );
-    }
-
-    await conn.commit();
-    return await findById(itemId);
-  } catch (err) {
-    await conn.rollback();
-    throw err;
-  } finally {
-    conn.release();
+    if (updateError) throw new Error(updateError.message);
   }
+
+  // 3. Handle image update
+  if (imagePath !== undefined && imagePath !== null) {
+    const { data: existing } = await supabase
+      .from("item_images")
+      .select("id")
+      .eq("item_id", itemId)
+      .eq("is_primary", true)
+      .maybeSingle();
+
+    if (existing) {
+      await supabase
+        .from("item_images")
+        .update({ image_path: imagePath })
+        .eq("id", existing.id);
+    } else {
+      await supabase
+        .from("item_images")
+        .insert({ item_id: itemId, image_path: imagePath, is_primary: true });
+    }
+  }
+
+  // 4. Log status history if status changed
+  if (statusId !== undefined && statusId !== oldStatusId) {
+    await supabase.from("item_status_history").insert({
+      item_id: itemId,
+      old_status_id: oldStatusId,
+      new_status_id: statusId,
+      changed_by: reporterId,
+    });
+  }
+
+  return await findById(itemId);
 };
 
 const softDelete = async (itemId, reporterId) => {
-  const [result] = await pool.query(
-    "UPDATE items SET is_active = 0, updated_at = NOW() WHERE id = ? AND reporter_id = ?",
-    [itemId, reporterId],
-  );
-  if (result.affectedRows === 0)
-    throw new Error("Item not found or not authorized.");
+  // Verify ownership first
+  const { data: item } = await supabase
+    .from("items")
+    .select("id")
+    .eq("id", itemId)
+    .eq("reporter_id", reporterId)
+    .maybeSingle();
+
+  if (!item) throw new Error("Item not found or not authorized.");
+
+  const { error } = await supabase
+    .from("items")
+    .update({ is_active: false })
+    .eq("id", itemId);
+
+  if (error) throw new Error(error.message);
+};
+
+// ─── Internal shape helper ────────────────────────────────────────────────────
+// Flattens Supabase's nested join objects into the flat shape
+// the controllers and frontend already expect.
+const _shape = (row) => {
+  const primaryImage = row.item_images?.find((img) => img.is_primary);
+  return {
+    id: row.id,
+    reference_number: row.reference_number,
+    name: row.name,
+    description: row.description ?? null,
+    category: row.categories?.name ?? null,
+    status: row.item_statuses?.name ?? null,
+    status_label: row.item_statuses?.label ?? null,
+    location: row.location,
+    date_reported: row.date_reported,
+    time_reported: row.time_reported ?? null,
+    contact_email: row.contact_email ?? null,
+    created_at: row.created_at,
+    reporter_id: row.reporter_id,
+    reporter_first_name: row.users?.first_name ?? null,
+    reporter_last_name: row.users?.last_name ?? null,
+    reporter_email: row.users?.email ?? null,
+    avatar_initials: row.users?.avatar_initials ?? null,
+    image: primaryImage?.image_path ?? null,
+  };
 };
 
 module.exports = {

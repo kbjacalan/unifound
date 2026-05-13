@@ -1,12 +1,5 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
 const AuthModel = require("../models/auth.model");
 const { success, error } = require("../utils/apiResponse");
-
-const generateToken = (payload) =>
-  jwt.sign(payload, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
-  });
 
 const signup = async (req, res, next) => {
   try {
@@ -28,23 +21,19 @@ const signup = async (req, res, next) => {
     if (await AuthModel.emailExists(email))
       return error(res, "Email is already registered.", 409);
 
-    const passwordHash = await bcrypt.hash(password, 12);
     const user = await AuthModel.createUser(
       first_name,
       last_name,
       email,
-      passwordHash,
+      password, // plain — Supabase Auth hashes it
       role,
     );
 
-    const token = generateToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    });
-
-    return success(res, { token, user }, "Account created successfully.", 201);
+    return success(res, { user }, "Account created successfully.", 201);
   } catch (err) {
+    // Surface Supabase-specific messages cleanly
+    if (err.message?.toLowerCase().includes("already registered"))
+      return error(res, "Email is already registered.", 409);
     next(err);
   }
 };
@@ -56,22 +45,26 @@ const login = async (req, res, next) => {
     if (!email || !password)
       return error(res, "Email and password are required.", 400);
 
-    const userRecord = await AuthModel.findByEmail(email);
-    if (!userRecord) return error(res, "Invalid email or password.", 401);
+    // Supabase Auth sign-in — returns session + user on success, null on failure
+    const session = await AuthModel.signIn(email, password);
+    if (!session) return error(res, "Invalid email or password.", 401);
 
-    const isMatch = await bcrypt.compare(password, userRecord.password_hash);
-    if (!isMatch) return error(res, "Invalid email or password.", 401);
+    // Fetch full profile (with role) from public.users
+    const user = await AuthModel.findByEmail(email);
+    if (!user) return error(res, "User profile not found.", 404);
 
-    await AuthModel.updateLastLogin(userRecord.id);
+    if (!user.is_active) return error(res, "Account is deactivated.", 403);
 
-    const user = await AuthModel.findById(userRecord.id);
-    const token = generateToken({
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    });
+    await AuthModel.updateLastLogin(user.id);
 
-    return success(res, { token, user }, "Login successful.");
+    return success(
+      res,
+      {
+        token: session.session.access_token,
+        user,
+      },
+      "Login successful.",
+    );
   } catch (err) {
     next(err);
   }
@@ -79,6 +72,7 @@ const login = async (req, res, next) => {
 
 const getMe = async (req, res, next) => {
   try {
+    // req.user is set by auth.middleware after token verification
     const user = await AuthModel.findById(req.user.id);
     if (!user) return error(res, "User not found.", 404);
     return success(res, { user }, "User fetched successfully.");
