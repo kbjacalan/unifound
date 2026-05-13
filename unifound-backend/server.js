@@ -1,15 +1,17 @@
 require("dotenv").config();
 const http = require("http");
 const app = require("./src/app");
-const pool = require("./src/config/db");
+const supabase = require("./src/config/db");
 const { initSocket } = require("./src/socket");
 
 const PORT = process.env.PORT || 5000;
 
 const start = async () => {
   try {
-    await pool.getConnection();
-    console.log("✅ MySQL connected successfully.");
+    // Verify Supabase connection by doing a lightweight query
+    const { error } = await supabase.from("roles").select("id").limit(1);
+    if (error) throw new Error(error.message);
+    console.log("✅ Supabase connected successfully.");
 
     const server = http.createServer(app);
     initSocket(server);
@@ -18,7 +20,7 @@ const start = async () => {
       console.log(`🚀 UniFound API running on http://localhost:${PORT}`);
     });
   } catch (err) {
-    console.error("❌ Failed to connect to MySQL:", err.message);
+    console.error("❌ Failed to connect to Supabase:", err.message);
     process.exit(1);
   }
 };
