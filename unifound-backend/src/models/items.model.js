@@ -155,7 +155,7 @@ const findAll = async ({
 
   const [items] = await pool.query(
     `SELECT
-       i.id, i.reference_number, i.name,
+       i.id, i.reference_number, i.name, i.description,
        c.name AS category,
        s.name AS status, s.label AS status_label,
        i.location, i.date_reported, i.contact_email, i.created_at,
