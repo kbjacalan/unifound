@@ -394,7 +394,13 @@
   }
   .topbar-user {
     padding: 5px 6px;
+    border-radius: 20px;
+    border: none;
     gap: 0;
+  }
+  .topbar-user-avatar {
+    width: 30px;
+    height: 30px;
   }
   .topbar-divider {
     margin: 0 2px;

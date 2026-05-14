@@ -380,7 +380,7 @@ const Topbar = () => {
 
                 <div className="topbar-dropdown-divider" />
 
-                <button
+                {/* <button
                   className="topbar-dropdown-item"
                   onClick={() => {
                     setDropdownOpen(false);
@@ -401,7 +401,7 @@ const Topbar = () => {
                   <span>Settings</span>
                 </button>
 
-                <div className="topbar-dropdown-divider" />
+                <div className="topbar-dropdown-divider" /> */}
 
                 <button
                   className="topbar-dropdown-item topbar-dropdown-item--danger"
