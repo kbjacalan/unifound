@@ -19,6 +19,8 @@ import {
   HelpCircle,
   Mail,
 } from "lucide-react";
+import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 import { useAuth } from "../../providers/AuthProvider";
 import { useSidebar } from "../../providers/SidebarProvider";
 import EditItemForm from "../EditItemForm/EditItemForm";
@@ -58,6 +60,107 @@ const STATUS_CONFIG = {
     description: "This case has been fully resolved and closed.",
   },
 };
+
+/* ── Skeleton that mirrors the real item-detail-layout ── */
+const ItemDetailSkeleton = () => (
+  <SkeletonTheme baseColor="#e2e8f0" highlightColor="#f1f5f9">
+    <div className="item-detail-layout">
+      {/* ── Left panel ── */}
+      <div className="item-detail-image-panel">
+        {/* Image wrap — aspect-ratio 4/3, border-radius 16px */}
+        <div className="item-detail-image-wrap">
+          <Skeleton
+            height="100%"
+            style={{ display: "block", lineHeight: "unset", borderRadius: 16 }}
+          />
+        </div>
+
+        {/* Reference number row — matches .item-detail-ref (padding 10px 14px) */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            padding: "10px 14px",
+            background: "#fff",
+            border: "1px solid #e2e8f0",
+            borderRadius: 10,
+          }}
+        >
+          <Skeleton width={80} height={11} />
+          <Skeleton width={100} height={12} />
+        </div>
+
+        {/* Status card — matches .item-detail-status-card (padding 12px 14px) */}
+        <div
+          style={{
+            padding: "12px 14px",
+            borderRadius: 10,
+            border: "1px solid #e2e8f0",
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+          }}
+        >
+          <Skeleton width="90%" height={12} />
+          <Skeleton width="75%" height={12} />
+        </div>
+      </div>
+
+      {/* ── Right panel ── */}
+      <div className="item-detail-info-panel">
+        {/* Header — item name (22px bold) + category (13px) */}
+        <div className="item-detail-header">
+          <Skeleton width="55%" height={26} style={{ marginBottom: 8 }} />
+          <Skeleton width="28%" height={13} />
+        </div>
+
+        {/* Description section */}
+        <div className="item-detail-section">
+          {/* Section title — 12px uppercase label */}
+          <Skeleton width={100} height={12} />
+          {/* Description box — matches .item-detail-description (padding 14px 16px) */}
+          <div
+            style={{
+              padding: "14px 16px",
+              background: "#fff",
+              border: "1px solid #e2e8f0",
+              borderRadius: 10,
+              display: "flex",
+              flexDirection: "column",
+              gap: 7,
+            }}
+          >
+            <Skeleton width="100%" height={13} />
+            <Skeleton width="95%" height={13} />
+            <Skeleton width="80%" height={13} />
+          </div>
+        </div>
+
+        {/* Item Details grid — 2-column, matches .item-detail-grid */}
+        <div className="item-detail-section">
+          <Skeleton width={90} height={12} />
+          <div className="item-detail-grid">
+            {/* 4 field cards — matches .item-detail-field (padding 12px 14px) */}
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="item-detail-field">
+                <Skeleton width="50%" height={11} style={{ marginBottom: 6 }} />
+                <Skeleton width="70%" height={14} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Action area placeholder */}
+        <Skeleton
+          width="100%"
+          height={46}
+          style={{ borderRadius: 10, marginTop: 4 }}
+        />
+      </div>
+    </div>
+  </SkeletonTheme>
+);
 
 const ItemDetail = ({ item: listItem, onBack }) => {
   const { user } = useAuth();
@@ -137,7 +240,6 @@ const ItemDetail = ({ item: listItem, onBack }) => {
     setExistingClaim(null);
   }, [listItem?.id]);
 
-  // Check existing claim once detail is loaded (non-owners only)
   useEffect(() => {
     if (!detail) return;
     const isOwn =
@@ -209,8 +311,6 @@ const ItemDetail = ({ item: listItem, onBack }) => {
 
   const hasPendingClaim = existingClaim?.status === "pending";
   const hasApprovedClaim = existingClaim?.status === "approved";
-
-  // Claimant has submitted a claim (pending or approved) — show contact info
   const hasActiveClaim = hasPendingClaim || hasApprovedClaim;
 
   return (
@@ -225,10 +325,7 @@ const ItemDetail = ({ item: listItem, onBack }) => {
           </button>
 
           {loading ? (
-            <div className="item-detail-loading">
-              <Loader size={32} className="item-list-spinner" />
-              <p>Loading details…</p>
-            </div>
+            <ItemDetailSkeleton />
           ) : error ? (
             <div className="item-detail-loading">
               <AlertCircle size={32} />
@@ -271,7 +368,6 @@ const ItemDetail = ({ item: listItem, onBack }) => {
                   <p>{status.description}</p>
                 </div>
 
-                {/* ── Owner action buttons on left panel (desktop) ── */}
                 {isOwnReport && (
                   <div className="item-detail-owner-actions">
                     {item?.status !== "claimed" && (
@@ -379,7 +475,6 @@ const ItemDetail = ({ item: listItem, onBack }) => {
                     )}
                   </>
                 ) : hasActiveClaim ? (
-                  /* Claimant submitted a claim — show contact info immediately */
                   <div className="item-detail-actions">
                     <div className="item-detail-contact-reveal">
                       <div className="item-detail-contact-reveal-header">
@@ -454,7 +549,6 @@ const ItemDetail = ({ item: listItem, onBack }) => {
         </div>
       </div>
 
-      {/* Claim modal */}
       {showClaimModal && detail && (
         <ClaimModal
           item={detail}
@@ -463,7 +557,6 @@ const ItemDetail = ({ item: listItem, onBack }) => {
         />
       )}
 
-      {/* Edit slide-over */}
       {showEdit && detail && (
         <EditItemForm
           item={detail}
@@ -472,7 +565,6 @@ const ItemDetail = ({ item: listItem, onBack }) => {
         />
       )}
 
-      {/* Delete confirmation modal */}
       <ConfirmModal
         isOpen={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
