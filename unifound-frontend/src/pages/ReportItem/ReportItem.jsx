@@ -192,8 +192,10 @@ const ReportItem = ({ onSubmit, onCancel }) => {
           <h2 className="rif-success-title">Report Submitted!</h2>
           <p className="rif-success-body">
             Your {form.status} item report for <strong>{form.name}</strong> has
-            been submitted. We'll get back to you at{" "}
-            <strong>{form.contactEmail}</strong>.
+            been submitted and is now listed publicly.{" "}
+            {form.status === "lost"
+              ? "If someone finds it, they can submit a claim and you'll be notified."
+              : "If the owner sees it, they can submit a claim and you'll be notified."}
           </p>
           <button
             className="rif-btn rif-btn--primary"

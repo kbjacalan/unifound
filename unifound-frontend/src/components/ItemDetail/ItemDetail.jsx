@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   Search,
   XCircle,
-  Loader,
   Info,
   Pencil,
   Trash2,
@@ -519,10 +518,17 @@ const ItemDetail = ({ item: listItem, onBack }) => {
                 ) : isActionable ? (
                   <div className="item-detail-actions">
                     {!claimCheckDone ? (
-                      <div className="item-detail-claim-checking">
-                        <Loader size={14} className="item-list-spinner" />
-                        <span>Checking claim status…</span>
-                      </div>
+                      <SkeletonTheme
+                        baseColor="#e2e8f0"
+                        highlightColor="#f1f5f9"
+                      >
+                        <Skeleton height={38} borderRadius={10} />
+                        <Skeleton
+                          height={13}
+                          width="70%"
+                          style={{ marginTop: 8 }}
+                        />
+                      </SkeletonTheme>
                     ) : (
                       <button
                         className="item-detail-btn item-detail-btn--primary"
