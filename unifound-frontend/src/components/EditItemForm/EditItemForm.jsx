@@ -38,23 +38,22 @@ const EditItemForm = ({ item, onClose, onSaved }) => {
     location: item.location ?? "",
     dateReported: item.dateReported
       ? (() => {
-          // Convert "Apr 12, 2025" -> "2025-04-12" for date input
           const d = new Date(item.dateReported);
-          if (!isNaN(d)) return d.toISOString().split("T")[0];
+          if (!isNaN(d)) {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, "0");
+            const day = String(d.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+          }
           return "";
         })()
       : "",
     contactEmail: item.contactEmail ?? item.reporterEmail ?? "",
-    description: item.description ?? "",
+    description: (() => {
+      const desc = item.description ?? "";
+      return desc.startsWith("No additional description") ? "" : desc;
+    })(),
   });
-
-  // If the description is the default placeholder text, clear it
-  const isPlaceholder = form.description.startsWith(
-    "No additional description",
-  );
-  if (isPlaceholder && form.description === item.description) {
-    form.description = "";
-  }
 
   const [imageFile, setImageFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(item.image ?? null);
