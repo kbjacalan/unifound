@@ -12,6 +12,9 @@ import { useAuth } from "./AuthProvider";
 const NotificationsContext = createContext({
   unreadCount: 0,
   refresh: () => {},
+  decrementUnread: () => {},
+  resetUnread: () => {},
+  newNotifListenerRef: null,
 });
 
 const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
@@ -20,8 +23,9 @@ export const NotificationsProvider = ({ children }) => {
   const { isAuthenticated } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const socketRef = useRef(null);
+  // Pages can register a callback here to receive live-pushed notifications
+  const newNotifListenerRef = useRef(null);
 
-  // Initial fetch of unread count from REST (still useful on page load)
   const refresh = useCallback(async () => {
     if (!isAuthenticated) {
       setUnreadCount(0);
@@ -39,23 +43,30 @@ export const NotificationsProvider = ({ children }) => {
     }
   }, [isAuthenticated]);
 
+  /** Decrement badge by `by` (default 1) — call when a notification is read/deleted */
+  const decrementUnread = useCallback((by = 1) => {
+    setUnreadCount((prev) => Math.max(0, prev - by));
+  }, []);
+
+  const resetUnread = useCallback(() => {
+    setUnreadCount(0);
+  }, []);
+
   useEffect(() => {
-    refresh(); // fetch count once on mount/login
+    refresh();
 
     if (!isAuthenticated) return;
 
     const token = localStorage.getItem("token");
-
-    // Connect to WebSocket
-    const socket = io(API_URL, {
-      auth: { token },
-    });
-
+    const socket = io(API_URL, { auth: { token } });
     socketRef.current = socket;
 
-    // Increment badge in real-time when a new notification arrives
-    socket.on("notification", () => {
+    socket.on("notification", (notif) => {
+      // Always bump the bell badge
       setUnreadCount((prev) => prev + 1);
+      if (typeof newNotifListenerRef.current === "function") {
+        newNotifListenerRef.current(notif);
+      }
     });
 
     return () => {
@@ -65,7 +76,15 @@ export const NotificationsProvider = ({ children }) => {
   }, [isAuthenticated, refresh]);
 
   return (
-    <NotificationsContext.Provider value={{ unreadCount, refresh }}>
+    <NotificationsContext.Provider
+      value={{
+        unreadCount,
+        refresh,
+        decrementUnread,
+        resetUnread,
+        newNotifListenerRef,
+      }}
+    >
       {children}
     </NotificationsContext.Provider>
   );

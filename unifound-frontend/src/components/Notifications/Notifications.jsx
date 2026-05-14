@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Bell,
@@ -16,6 +16,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { useSidebar } from "../../providers/SidebarProvider";
+import { useNotifications } from "../../providers/NotificationsProvider";
 import "./Notifications.css";
 
 const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
@@ -55,7 +56,6 @@ const NotificationItem = ({ notif, onRead, onDelete, onNavigate }) => {
 
   const handleViewItem = async (e) => {
     e.preventDefault();
-    // Mark as read before navigating
     if (!notif.is_read) await onRead(notif.id);
     if (notif.type === "message") {
       onNavigate(`/my-reports?item=${notif.item_id}`);
@@ -63,6 +63,7 @@ const NotificationItem = ({ notif, onRead, onDelete, onNavigate }) => {
       onNavigate("/my-claims");
     }
   };
+
   return (
     <div
       className={`notif-item ${config.color} ${notif.is_read ? "notif-item--read" : "notif-item--unread"}`}
@@ -118,6 +119,9 @@ const NotificationItem = ({ notif, onRead, onDelete, onNavigate }) => {
 const Notifications = () => {
   const { isOpen: sidebarOpen } = useSidebar();
   const navigate = useNavigate();
+  const { decrementUnread, resetUnread, newNotifListenerRef } =
+    useNotifications();
+
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("All");
@@ -142,10 +146,22 @@ const Notifications = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
+  // Register with the provider so live-pushed notifications appear instantly
+  useEffect(() => {
+    newNotifListenerRef.current = (notif) => {
+      setNotifications((prev) => [notif, ...prev]);
+    };
+    return () => {
+      newNotifListenerRef.current = null;
+    };
+  }, [newNotifListenerRef]);
+
   const markRead = async (id) => {
+    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
     );
+    decrementUnread(1); // keep badge in sync
     try {
       const token = localStorage.getItem("token");
       await fetch(`${API_URL}/api/notifications/${id}/read`, {
@@ -158,7 +174,10 @@ const Notifications = () => {
   };
 
   const deleteNotif = async (id) => {
+    const target = notifications.find((n) => n.id === id);
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    // Only decrement if the deleted notification was unread
+    if (target && !target.is_read) decrementUnread(1);
     try {
       const token = localStorage.getItem("token");
       await fetch(`${API_URL}/api/notifications/${id}`, {
@@ -172,6 +191,7 @@ const Notifications = () => {
 
   const markAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    resetUnread(); // zero the badge
     try {
       const token = localStorage.getItem("token");
       await fetch(`${API_URL}/api/notifications/read-all`, {
@@ -186,6 +206,7 @@ const Notifications = () => {
   const clearAll = async () => {
     const toDelete = [...notifications];
     setNotifications([]);
+    resetUnread(); // all gone, badge = 0
     try {
       const token = localStorage.getItem("token");
       await Promise.all(

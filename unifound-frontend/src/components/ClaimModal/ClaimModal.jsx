@@ -53,7 +53,7 @@ const ClaimModal = ({ item, onClose, onSubmitted }) => {
   };
 
   const isFound = item?.status === "found";
-  const contactEmail = item?.contactEmail || "unifound@gmail.com";
+  const contactEmail = item?.contact_email || "";
 
   return (
     <div className="claim-overlay" onClick={onClose}>
@@ -81,27 +81,34 @@ const ClaimModal = ({ item, onClose, onSubmitted }) => {
                 <Mail size={13} />
                 Reporter's Contact
               </div>
-              <a
-                className="claim-contact-reveal-email"
-                href={`mailto:${contactEmail}`}
-              >
-                {contactEmail}
-              </a>
-              <a
-                className="claim-btn claim-btn--primary"
-                href={`mailto:${contactEmail}`}
-                style={{ textDecoration: "none", textAlign: "center" }}
-              >
-                Send Email
-              </a>
+              {contactEmail ? (
+                <a
+                  className="claim-contact-reveal-email"
+                  href={`mailto:${contactEmail}`}
+                >
+                  {contactEmail}
+                </a>
+              ) : (
+                <span className="claim-contact-reveal-email">Not provided</span>
+              )}
             </div>
-            <button
-              className="claim-btn claim-btn--secondary"
-              onClick={onClose}
-              style={{ marginTop: "8px" }}
-            >
-              Close
-            </button>
+            <div className="claim-modal-actions">
+              <button
+                className="claim-btn claim-btn--secondary"
+                onClick={onClose}
+              >
+                Close
+              </button>
+              {contactEmail && (
+                <a
+                  className="claim-btn claim-btn--primary"
+                  href={`mailto:${contactEmail}`}
+                  style={{ textDecoration: "none", textAlign: "center" }}
+                >
+                  Send Email
+                </a>
+              )}
+            </div>
           </div>
         ) : (
           <>

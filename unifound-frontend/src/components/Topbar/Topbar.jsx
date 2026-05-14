@@ -56,7 +56,7 @@ const Topbar = () => {
 
   const { isOpen: sidebarOpen } = useSidebar();
   const { user, logout } = useAuth();
-  const { unreadCount, refresh: refreshNotifCount } = useNotifications();
+  const { unreadCount, decrementUnread, resetUnread } = useNotifications();
   const { pathname } = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -150,7 +150,7 @@ const Topbar = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setNotifs([]);
-      refreshNotifCount?.();
+      resetUnread();
     } catch {}
   };
 
@@ -163,7 +163,7 @@ const Topbar = () => {
           headers: { Authorization: `Bearer ${token}` },
         });
         setNotifs((prev) => prev.filter((n) => n.id !== notif.id));
-        refreshNotifCount?.();
+        decrementUnread(1);
       } catch {}
     }
     setNotifOpen(false);
