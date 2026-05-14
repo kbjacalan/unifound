@@ -226,9 +226,11 @@ const MyClaims = () => {
             <div>
               <h1 className="myclaims-page-title">My Claims</h1>
               <p className="myclaims-page-sub">
-                {loading
-                  ? "Loading…"
-                  : `${claims.length} claim${claims.length !== 1 ? "s" : ""} submitted`}
+                {loading ? (
+                  <Skeleton width={120} height={13} />
+                ) : (
+                  `${claims.length} claim${claims.length !== 1 ? "s" : ""} submitted`
+                )}
               </p>
             </div>
           </div>

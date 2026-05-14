@@ -295,11 +295,13 @@ const Notifications = () => {
             <div>
               <h1 className="notif-page-title">Notifications</h1>
               <p className="notif-page-sub">
-                {loading
-                  ? "Loading…"
-                  : unreadCount > 0
-                    ? `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}`
-                    : "You're all caught up"}
+                {loading ? (
+                  <Skeleton width={120} height={13} />
+                ) : unreadCount > 0 ? (
+                  `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}`
+                ) : (
+                  "You're all caught up"
+                )}
               </p>
             </div>
           </div>
