@@ -125,6 +125,8 @@ const findClaimsByItem = async (itemId, reporterId) => {
 
 /**
  * Get claims made BY the logged-in user (their claim history).
+ * Intentionally omits the is_active filter so claims on soft-deleted
+ * items are still visible to the claimant.
  */
 const findMyClaims = async (claimantId) => {
   const [rows] = await pool.query(
@@ -137,6 +139,7 @@ const findMyClaims = async (claimantId) => {
        c.reviewed_at,
        i.name          AS item_name,
        i.reference_number,
+       i.is_active     AS item_is_active,
        s.label         AS item_status_label,
        u.first_name    AS reporter_first_name,
        u.last_name     AS reporter_last_name
@@ -149,6 +152,60 @@ const findMyClaims = async (claimantId) => {
     [claimantId],
   );
   return rows;
+};
+
+/**
+ * Reject all pending claims on an item (used when the item is deleted).
+ * Notifies each affected claimant.
+ */
+const rejectAllPending = async (itemId, reporterId) => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // Fetch item name + all pending claimant IDs in one go
+    const [rows] = await conn.query(
+      `SELECT c.id, c.claimant_id, i.name AS item_name, i.reference_number
+       FROM claims c
+       JOIN items i ON i.id = c.item_id
+       WHERE c.item_id = ? AND c.status = 'pending'`,
+      [itemId],
+    );
+
+    if (rows.length === 0) {
+      await conn.commit();
+      return; // nothing to do
+    }
+
+    // Bulk-reject all pending claims
+    await conn.query(
+      `UPDATE claims
+       SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW()
+       WHERE item_id = ? AND status = 'pending'`,
+      [reporterId, itemId],
+    );
+
+    await conn.commit();
+
+    // Notify every affected claimant (outside transaction is fine)
+    const { item_name, reference_number } = rows[0];
+    await Promise.all(
+      rows.map(({ claimant_id }) =>
+        NotificationsModel.createNotification({
+          userId: claimant_id,
+          type: "alert",
+          title: `Item removed by reporter`,
+          body: `The reporter has removed "${item_name}" (${reference_number}). Your pending claim has been automatically closed.`,
+          itemId,
+        }),
+      ),
+    );
+  } catch (err) {
+    await conn.rollback();
+    throw err;
+  } finally {
+    conn.release();
+  }
 };
 
 /**
@@ -291,4 +348,5 @@ module.exports = {
   approveClaim,
   rejectClaim,
   findExistingClaim,
+  rejectAllPending,
 };

@@ -319,7 +319,12 @@ const updateItem = async (
   }
 };
 
+const ClaimsModel = require("./claims.model");
+
 const softDelete = async (itemId, reporterId) => {
+  // Reject any open claims and notify claimants before hiding the item
+  await ClaimsModel.rejectAllPending(itemId, reporterId);
+
   const [result] = await pool.query(
     "UPDATE items SET is_active = 0, updated_at = NOW() WHERE id = ? AND reporter_id = ?",
     [itemId, reporterId],

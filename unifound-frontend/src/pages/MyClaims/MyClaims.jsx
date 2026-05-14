@@ -58,6 +58,13 @@ const STATUS_CONFIG = {
     iconClass: "claim-icon--rejected",
     pipClass: "claim-pip--rejected",
   },
+  item_removed: {
+    icon: XCircle,
+    label: "Item Removed",
+    badgeClass: "claim-status--item-removed",
+    iconClass: "claim-icon--item-removed",
+    pipClass: "claim-pip--item-removed",
+  },
 };
 
 const FILTERS = ["All", "Pending", "Returned", "Rejected"];
@@ -106,11 +113,22 @@ const ClaimCardSkeleton = () => (
 
 const ClaimCard = ({ claim, index }) => {
   const navigate = useNavigate();
-  const config = STATUS_CONFIG[claim.status] ?? STATUS_CONFIG.pending;
+
+  // If the item was soft-deleted, show "Item Removed" regardless of claim status
+  const displayKey =
+    claim.item_is_active === 0 && claim.status === "rejected"
+      ? "item_removed"
+      : claim.status;
+
+  const config = STATUS_CONFIG[displayKey] ?? STATUS_CONFIG.pending;
   const StatusIcon = config.icon;
+  const isItemRemoved = displayKey === "item_removed";
 
   return (
-    <div className="claim-card" style={{ animationDelay: `${index * 0.05}s` }}>
+    <div
+      className={`claim-card${isItemRemoved ? " claim-card--removed" : ""}`}
+      style={{ animationDelay: `${index * 0.05}s` }}
+    >
       <span className={`claim-status-pip ${config.pipClass}`} />
 
       <div className={`claim-icon-wrap ${config.iconClass}`}>
@@ -128,7 +146,12 @@ const ClaimCard = ({ claim, index }) => {
           </span>
         </div>
 
-        <h3 className="claim-card-item-name">{claim.item_name}</h3>
+        <h3 className="claim-card-item-name">
+          {claim.item_name}
+          {isItemRemoved && (
+            <span className="claim-item-removed-note"> (removed)</span>
+          )}
+        </h3>
 
         <div className="claim-card-meta">
           <span className="claim-meta-item">
@@ -147,20 +170,29 @@ const ClaimCard = ({ claim, index }) => {
           )}
         </div>
 
-        {claim.message && (
+        {isItemRemoved && (
+          <div className="claim-card-removed-notice">
+            This item was removed by the reporter. Your claim has been
+            automatically closed.
+          </div>
+        )}
+
+        {!isItemRemoved && claim.message && (
           <div className="claim-card-message">
             <MessageSquare size={13} className="claim-message-icon" />
             <p>{claim.message}</p>
           </div>
         )}
 
-        <button
-          className="claim-view-btn"
-          onClick={() => navigate(`/browse-items?item=${claim.item_id}`)}
-        >
-          <ExternalLink size={11} />
-          View Item
-        </button>
+        {!isItemRemoved && (
+          <button
+            className="claim-view-btn"
+            onClick={() => navigate(`/browse-items?item=${claim.item_id}`)}
+          >
+            <ExternalLink size={11} />
+            View Item
+          </button>
+        )}
       </div>
     </div>
   );
