@@ -10,10 +10,11 @@ import {
   ChevronRight,
   RefreshCw,
   AlertCircle,
-  Loader,
   Pencil,
   Trash2,
 } from "lucide-react";
+import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 import { useAuth } from "../../providers/AuthProvider";
 import { useSidebar } from "../../providers/SidebarProvider";
 import ItemDetail from "../ItemDetail/ItemDetail";
@@ -30,11 +31,26 @@ const STATUS_CONFIG = {
   resolved: { label: "Resolved", className: "status--resolved" },
 };
 
+const ItemCardSkeleton = () => (
+  <div className="item-card" style={{ cursor: "default" }}>
+    <div className="item-card-image" style={{ background: "transparent" }}>
+      <Skeleton height="100%" style={{ display: "block", borderRadius: 14 }} />
+    </div>
+    <div className="item-card-body">
+      <Skeleton width="70%" height={16} style={{ marginBottom: 8 }} />
+      <Skeleton width="50%" height={12} style={{ marginBottom: 4 }} />
+      <Skeleton width="60%" height={12} style={{ marginBottom: 4 }} />
+      <Skeleton width="45%" height={12} style={{ marginBottom: 4 }} />
+      <Skeleton width="55%" height={12} />
+    </div>
+  </div>
+);
+
 const ItemCard = ({ item, onClick, isOwn, onEdit, onDelete }) => {
   const status = STATUS_CONFIG[item.status] ?? STATUS_CONFIG.lost;
 
   const handleActionClick = (e, action) => {
-    e.stopPropagation(); // prevent card click / opening detail
+    e.stopPropagation();
     action();
   };
 
@@ -53,7 +69,6 @@ const ItemCard = ({ item, onClick, isOwn, onEdit, onDelete }) => {
           {item.status_label || status.label}
         </span>
 
-        {/* Owner action buttons — top-left corner */}
         {isOwn && (
           <div className="item-card-owner-actions">
             {item.status !== "claimed" && (
@@ -124,15 +139,12 @@ const ItemList = ({
   const [deleteItem, setDeleteItem] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  // Track whether the current selectedItem was opened via deep-link
   const deepLinkedRef = useRef(false);
 
-  // Deep-link: read ?item=<id> from URL, find in list or fetch from API
   useEffect(() => {
     const itemIdFromUrl = searchParams.get("item");
     if (!itemIdFromUrl) return;
 
-    // Try to find it in the already-loaded list first
     const found = items.find((i) => String(i.id) === String(itemIdFromUrl));
     if (found) {
       deepLinkedRef.current = true;
@@ -140,7 +152,6 @@ const ItemList = ({
       return;
     }
 
-    // Not in list yet (different page, or list still loading) — fetch directly
     const fetchById = async () => {
       try {
         const token = localStorage.getItem("token");
@@ -183,11 +194,9 @@ const ItemList = ({
     };
 
     fetchById();
-    // Only re-run when the URL param changes, not on every items[] update
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  // Back handler: clear ?item= param if we arrived via deep-link
   const handleBack = () => {
     setSelectedItem(null);
     if (deepLinkedRef.current) {
@@ -216,18 +225,15 @@ const ItemList = ({
       if (!res.ok) throw new Error("Failed to delete.");
       onItemsChanged?.();
     } catch {
-      // silently fail; toast system could be added later
+      // silently fail
     } finally {
       setDeleting(false);
       setDeleteItem(null);
     }
   };
 
-  // Determine ownership using reporter_id from token (user.id) vs item.reporterId
-  // or fall back to email comparison if available
   const isOwn = (item) => {
     if (!user) return false;
-    // Use Number() to avoid type mismatch (DB returns int, JSON parse may give string)
     if (item.reporterId != null && user.id != null)
       return Number(item.reporterId) === Number(user.id);
     if (item.reporterEmail && user.email)
@@ -247,12 +253,18 @@ const ItemList = ({
 
   if (loading) {
     return (
-      <div className={wrapperClass}>
-        <div className="item-list-empty">
-          <Loader size={36} className="item-list-spinner" />
-          <p>Loading items…</p>
+      <SkeletonTheme
+        baseColor="var(--main-background)"
+        highlightColor="var(--secondary-background)"
+      >
+        <div className={wrapperClass}>
+          <div className="item-list">
+            {Array.from({ length: 12 }).map((_, i) => (
+              <ItemCardSkeleton key={i} />
+            ))}
+          </div>
         </div>
-      </div>
+      </SkeletonTheme>
     );
   }
 
@@ -328,7 +340,6 @@ const ItemList = ({
         )}
       </div>
 
-      {/* Quick-edit from card */}
       {editItem && (
         <EditItemForm
           item={{
@@ -352,7 +363,6 @@ const ItemList = ({
         />
       )}
 
-      {/* Delete confirmation from card */}
       <ConfirmModal
         isOpen={!!deleteItem}
         onClose={() => setDeleteItem(null)}
