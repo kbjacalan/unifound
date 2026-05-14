@@ -12,9 +12,10 @@ import {
   Trash2,
   BellOff,
   Filter,
-  Loader,
   ExternalLink,
 } from "lucide-react";
+import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 import { useSidebar } from "../../providers/SidebarProvider";
 import { useNotifications } from "../../providers/NotificationsProvider";
 import "./Notifications.css";
@@ -49,6 +50,53 @@ const timeAgo = (dateStr) => {
     day: "numeric",
   });
 };
+
+/* ── Skeleton for a single notification row ── */
+const NotifItemSkeleton = () => (
+  <div
+    className="notif-item notif-item--read"
+    style={{ pointerEvents: "none" }}
+  >
+    {/* Left unread pip — 4px wide, 48px tall */}
+    <span className="notif-unread-pip" style={{ background: "#e2e8f0" }} />
+
+    {/* Icon wrap — 38×38, border-radius 10px */}
+    <Skeleton
+      width={38}
+      height={38}
+      style={{ borderRadius: 10, flexShrink: 0 }}
+    />
+
+    {/* Content */}
+    <div className="notif-content">
+      {/* Top row: type badge + time */}
+      <div className="notif-top">
+        <Skeleton width={80} height={20} style={{ borderRadius: 20 }} />
+        <Skeleton width={44} height={11} style={{ marginLeft: "auto" }} />
+      </div>
+
+      {/* Notification title — 13.5px bold */}
+      <Skeleton width="65%" height={14} style={{ marginTop: 2 }} />
+
+      {/* Body text — 12.5px, two lines */}
+      <Skeleton width="90%" height={12} style={{ marginTop: 2 }} />
+      <Skeleton width="70%" height={12} style={{ marginTop: 3 }} />
+
+      {/* View Item link */}
+      <Skeleton
+        width={64}
+        height={12}
+        style={{ marginTop: 6, borderRadius: 4 }}
+      />
+    </div>
+
+    {/* Action buttons column — two 28×28 squares */}
+    <div className="notif-actions">
+      <Skeleton width={28} height={28} style={{ borderRadius: 8 }} />
+      <Skeleton width={28} height={28} style={{ borderRadius: 8 }} />
+    </div>
+  </div>
+);
 
 const NotificationItem = ({ notif, onRead, onDelete, onNavigate }) => {
   const config = NOTIF_TYPES[notif.type] ?? NOTIF_TYPES.status;
@@ -146,7 +194,6 @@ const Notifications = () => {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // Register with the provider so live-pushed notifications appear instantly
   useEffect(() => {
     newNotifListenerRef.current = (notif) => {
       setNotifications((prev) => [notif, ...prev]);
@@ -157,11 +204,10 @@ const Notifications = () => {
   }, [newNotifListenerRef]);
 
   const markRead = async (id) => {
-    // Optimistic update
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n)),
     );
-    decrementUnread(1); // keep badge in sync
+    decrementUnread(1);
     try {
       const token = localStorage.getItem("token");
       await fetch(`${API_URL}/api/notifications/${id}/read`, {
@@ -176,7 +222,6 @@ const Notifications = () => {
   const deleteNotif = async (id) => {
     const target = notifications.find((n) => n.id === id);
     setNotifications((prev) => prev.filter((n) => n.id !== id));
-    // Only decrement if the deleted notification was unread
     if (target && !target.is_read) decrementUnread(1);
     try {
       const token = localStorage.getItem("token");
@@ -191,7 +236,7 @@ const Notifications = () => {
 
   const markAllRead = async () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, is_read: true })));
-    resetUnread(); // zero the badge
+    resetUnread();
     try {
       const token = localStorage.getItem("token");
       await fetch(`${API_URL}/api/notifications/read-all`, {
@@ -206,7 +251,7 @@ const Notifications = () => {
   const clearAll = async () => {
     const toDelete = [...notifications];
     setNotifications([]);
-    resetUnread(); // all gone, badge = 0
+    resetUnread();
     try {
       const token = localStorage.getItem("token");
       await Promise.all(
@@ -294,10 +339,13 @@ const Notifications = () => {
         </div>
 
         {loading ? (
-          <div className="notif-loading">
-            <Loader size={28} className="notif-spinner" />
-            <p>Loading notifications…</p>
-          </div>
+          <SkeletonTheme baseColor="#e2e8f0" highlightColor="#f1f5f9">
+            <div className="notif-list">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <NotifItemSkeleton key={i} />
+              ))}
+            </div>
+          </SkeletonTheme>
         ) : filtered.length === 0 ? (
           <div className="notif-empty">
             <BellOff size={38} />

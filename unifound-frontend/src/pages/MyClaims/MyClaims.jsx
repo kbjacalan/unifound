@@ -5,7 +5,6 @@ import {
   Clock,
   CheckCircle2,
   XCircle,
-  Loader,
   PackageSearch,
   ExternalLink,
   MessageSquare,
@@ -14,6 +13,8 @@ import {
   User,
   Filter,
 } from "lucide-react";
+import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 import { useSidebar } from "../../providers/SidebarProvider";
 import "./MyClaims.css";
 
@@ -61,6 +62,46 @@ const STATUS_CONFIG = {
 
 const FILTERS = ["All", "Pending", "Returned", "Rejected"];
 
+/* ── Skeleton for a single claim card ── */
+const ClaimCardSkeleton = () => (
+  <div className="claim-card" style={{ pointerEvents: "none" }}>
+    {/* Left pip — 4px wide, 48px tall */}
+    <span className="claim-status-pip" style={{ background: "#e2e8f0" }} />
+
+    {/* Icon wrap — 38×38, border-radius 10px */}
+    <Skeleton
+      width={38}
+      height={38}
+      style={{ borderRadius: 10, flexShrink: 0 }}
+    />
+
+    {/* Card body */}
+    <div className="claim-card-body">
+      {/* Top row: status badge + time */}
+      <div className="claim-card-top">
+        <Skeleton width={64} height={20} style={{ borderRadius: 20 }} />
+        <Skeleton width={48} height={11} style={{ marginLeft: "auto" }} />
+      </div>
+
+      {/* Item name — 13.5px bold */}
+      <Skeleton width="60%" height={14} style={{ marginTop: 2 }} />
+
+      {/* Meta row — ref + reporter */}
+      <div className="claim-card-meta" style={{ marginTop: 2 }}>
+        <Skeleton width={80} height={12} />
+        <Skeleton width={90} height={12} />
+      </div>
+
+      {/* View Item link */}
+      <Skeleton
+        width={68}
+        height={12}
+        style={{ marginTop: 6, borderRadius: 4 }}
+      />
+    </div>
+  </div>
+);
+
 const ClaimCard = ({ claim, index }) => {
   const navigate = useNavigate();
   const config = STATUS_CONFIG[claim.status] ?? STATUS_CONFIG.pending;
@@ -68,17 +109,13 @@ const ClaimCard = ({ claim, index }) => {
 
   return (
     <div className="claim-card" style={{ animationDelay: `${index * 0.05}s` }}>
-      {/* Coloured left pip */}
       <span className={`claim-status-pip ${config.pipClass}`} />
 
-      {/* Icon */}
       <div className={`claim-icon-wrap ${config.iconClass}`}>
         <StatusIcon size={16} />
       </div>
 
-      {/* Body */}
       <div className="claim-card-body">
-        {/* Top row: badge + time */}
         <div className="claim-card-top">
           <span className={`claim-status-badge ${config.badgeClass}`}>
             {config.label}
@@ -89,10 +126,8 @@ const ClaimCard = ({ claim, index }) => {
           </span>
         </div>
 
-        {/* Item name */}
         <h3 className="claim-card-item-name">{claim.item_name}</h3>
 
-        {/* Meta */}
         <div className="claim-card-meta">
           <span className="claim-meta-item">
             <Hash size={11} />
@@ -110,7 +145,6 @@ const ClaimCard = ({ claim, index }) => {
           )}
         </div>
 
-        {/* Optional message */}
         {claim.message && (
           <div className="claim-card-message">
             <MessageSquare size={13} className="claim-message-icon" />
@@ -118,7 +152,6 @@ const ClaimCard = ({ claim, index }) => {
           </div>
         )}
 
-        {/* View Item */}
         <button
           className="claim-view-btn"
           onClick={() => navigate(`/browse-items?item=${claim.item_id}`)}
@@ -220,10 +253,13 @@ const MyClaims = () => {
 
         {/* Content */}
         {loading ? (
-          <div className="myclaims-loading">
-            <Loader size={28} className="myclaims-spinner" />
-            <p>Loading your claims…</p>
-          </div>
+          <SkeletonTheme baseColor="#e2e8f0" highlightColor="#f1f5f9">
+            <div className="myclaims-list">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <ClaimCardSkeleton key={i} />
+              ))}
+            </div>
+          </SkeletonTheme>
         ) : error ? (
           <div className="myclaims-error">
             <XCircle size={38} />

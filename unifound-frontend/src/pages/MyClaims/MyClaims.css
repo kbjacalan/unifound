@@ -376,8 +376,7 @@
   text-decoration: underline;
 }
 
-/* ── Loading / Empty / Error states ─────────────────────────── */
-.myclaims-loading,
+/* ── Empty / Error states ────────────────────────────────────── */
 .myclaims-empty,
 .myclaims-error {
   display: flex;
@@ -389,13 +388,11 @@
   text-align: center;
 }
 
-.myclaims-loading svg,
 .myclaims-empty svg {
   opacity: 0.25;
   color: var(--primary-blue, #2563eb);
 }
 
-.myclaims-loading p,
 .myclaims-empty p {
   font-size: 15px;
   font-weight: 600;
@@ -418,18 +415,6 @@
   font-weight: 600;
   color: #dc2626;
   margin: 0;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.myclaims-spinner {
-  animation: spin 0.8s linear infinite;
-  color: var(--primary-blue, #2563eb);
-  opacity: 1 !important;
 }
 
 .myclaims-retry-btn {

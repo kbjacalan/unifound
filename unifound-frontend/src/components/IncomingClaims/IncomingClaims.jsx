@@ -10,6 +10,8 @@ import {
   ChevronUp,
   PackageCheck,
 } from "lucide-react";
+import Skeleton, { SkeletonTheme } from "react-loading-skeleton";
+import "react-loading-skeleton/dist/skeleton.css";
 import "./IncomingClaims.css";
 
 const API_URL = import.meta.env.VITE_UNIFOUND_BACKEND_URL;
@@ -23,6 +25,28 @@ const timeAgo = (dateStr) => {
   if (hrs < 24) return `${hrs}h ago`;
   return `${Math.floor(hrs / 24)}d ago`;
 };
+
+/* ── Skeleton for a single claim row ── */
+const ClaimItemSkeleton = () => (
+  <div className="inc-claim-item" style={{ pointerEvents: "none" }}>
+    <div className="inc-claim-top">
+      {/* Avatar circle — 36×36, border-radius 50% */}
+      <Skeleton circle width={36} height={36} style={{ flexShrink: 0 }} />
+
+      {/* Name + email column */}
+      <div className="inc-claim-info">
+        <Skeleton width="55%" height={13} style={{ marginBottom: 5 }} />
+        <Skeleton width="70%" height={11} />
+      </div>
+
+      {/* Status pill + time — right-aligned */}
+      <div className="inc-claim-meta">
+        <Skeleton width={60} height={20} style={{ borderRadius: 20 }} />
+        <Skeleton width={40} height={11} />
+      </div>
+    </div>
+  </div>
+);
 
 const IncomingClaims = ({ itemId, onClaimActioned }) => {
   const [claims, setClaims] = useState([]);
@@ -78,10 +102,24 @@ const IncomingClaims = ({ itemId, onClaimActioned }) => {
 
   if (loading) {
     return (
-      <div className="inc-claims-loading">
-        <Loader size={16} className="inc-claims-spinner" />
-        <span>Loading claims…</span>
-      </div>
+      <SkeletonTheme baseColor="#e2e8f0" highlightColor="#f1f5f9">
+        <div className="inc-claims-panel">
+          {/* Toggle header — same markup as real header */}
+          <div className="inc-claims-toggle" style={{ cursor: "default" }}>
+            <div className="inc-claims-toggle-left">
+              <Users size={15} style={{ opacity: 0.3 }} />
+              <Skeleton width={110} height={13} />
+            </div>
+            <ChevronUp size={15} style={{ opacity: 0.3 }} />
+          </div>
+
+          {/* 2 skeleton claim rows */}
+          <div className="inc-claims-list">
+            <ClaimItemSkeleton />
+            <ClaimItemSkeleton />
+          </div>
+        </div>
+      </SkeletonTheme>
     );
   }
 
