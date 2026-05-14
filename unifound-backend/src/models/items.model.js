@@ -18,11 +18,13 @@ const getStatusId = async (statusName = "lost") => {
 
 const generateRefNumber = async () => {
   const year = new Date().getFullYear();
+  const prefix = `LF-${year}-`;
   const [rows] = await pool.query(
-    "SELECT COUNT(*) AS total FROM items WHERE YEAR(created_at) = ?",
-    [year],
+    "SELECT MAX(CAST(SUBSTRING(reference_number, ?) AS UNSIGNED)) AS last_num FROM items WHERE reference_number LIKE ?",
+    [prefix.length + 1, `${prefix}%`],
   );
-  const next = (rows[0].total + 1).toString().padStart(4, "0");
+  const last = rows[0].last_num ?? 0;
+  const next = (last + 1).toString().padStart(4, "0");
   return `LF-${year}-${next}`;
 };
 
