@@ -220,9 +220,7 @@ const ItemDetail = ({ item: listItem, onBack }) => {
             : "Unknown",
         reporterEmail: raw.reporter_email ?? null,
         image: raw.image ?? null,
-        description:
-          raw.description ||
-          "No additional description has been provided for this item. If you have more information, please contact the reporter directly or reach out to the Lost & Found office.",
+        description: raw.description || null,
         contactEmail: raw.contact_email || "unifound@gmail.com",
         referenceNumber: raw.reference_number || "—",
       });
@@ -407,7 +405,10 @@ const ItemDetail = ({ item: listItem, onBack }) => {
                     <FileText size={14} />
                     Description
                   </h2>
-                  <p className="item-detail-description">{item.description}</p>
+                  <p className="item-detail-description">
+                    {item.description ||
+                      "No additional description has been provided for this item. If you have more information, please contact the reporter directly or reach out to the Lost & Found office."}
+                  </p>
                 </div>
 
                 <div className="item-detail-section">

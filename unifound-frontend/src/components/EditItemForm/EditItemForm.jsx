@@ -49,10 +49,7 @@ const EditItemForm = ({ item, onClose, onSaved }) => {
         })()
       : "",
     contactEmail: item.contactEmail ?? item.reporterEmail ?? "",
-    description: (() => {
-      const desc = item.description ?? "";
-      return desc.startsWith("No additional description") ? "" : desc;
-    })(),
+    description: item.description ?? "",
   });
 
   const [imageFile, setImageFile] = useState(null);
