@@ -72,7 +72,9 @@ const NotifItemSkeleton = () => (
       {/* Top row: type badge + time */}
       <div className="notif-top">
         <Skeleton width={80} height={20} style={{ borderRadius: 20 }} />
-        <Skeleton width={44} height={11} style={{ marginLeft: "auto" }} />
+        <div style={{ marginLeft: "auto" }}>
+          <Skeleton width={44} height={11} />
+        </div>
       </div>
 
       {/* Notification title — 13.5px bold */}

@@ -80,7 +80,9 @@ const ClaimCardSkeleton = () => (
       {/* Top row: status badge + time */}
       <div className="claim-card-top">
         <Skeleton width={64} height={20} style={{ borderRadius: 20 }} />
-        <Skeleton width={48} height={11} style={{ marginLeft: "auto" }} />
+        <div style={{ marginLeft: "auto" }}>
+          <Skeleton width={48} height={11} />
+        </div>
       </div>
 
       {/* Item name — 13.5px bold */}
