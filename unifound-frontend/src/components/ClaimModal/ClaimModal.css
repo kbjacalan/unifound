@@ -199,6 +199,10 @@
   padding-top: 4px;
 }
 
+.claim-success .claim-modal-actions {
+  width: 100%;
+}
+
 .claim-btn {
   display: inline-flex;
   align-items: center;
