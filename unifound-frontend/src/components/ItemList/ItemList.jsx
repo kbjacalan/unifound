@@ -31,17 +31,41 @@ const STATUS_CONFIG = {
   resolved: { label: "Resolved", className: "status--resolved" },
 };
 
+// Mirrors the real ItemCard layout so the skeleton slots in seamlessly
 const ItemCardSkeleton = () => (
-  <div className="item-card" style={{ cursor: "default" }}>
-    <div className="item-card-image" style={{ background: "transparent" }}>
-      <Skeleton height="100%" style={{ display: "block", borderRadius: 14 }} />
+  <div
+    className="item-card"
+    style={{ cursor: "default", pointerEvents: "none" }}
+  >
+    {/* Image area — same aspect-ratio: 4/3 and border-radius: 14px as .item-card-image */}
+    <div
+      style={{
+        position: "relative",
+        width: "100%",
+        borderRadius: 14,
+        aspectRatio: "4 / 3",
+        overflow: "hidden",
+      }}
+    >
+      <Skeleton height="100%" style={{ display: "block" }} />
     </div>
-    <div className="item-card-body">
-      <Skeleton width="70%" height={16} style={{ marginBottom: 8 }} />
-      <Skeleton width="50%" height={12} style={{ marginBottom: 4 }} />
-      <Skeleton width="60%" height={12} style={{ marginBottom: 4 }} />
-      <Skeleton width="45%" height={12} style={{ marginBottom: 4 }} />
-      <Skeleton width="55%" height={12} />
+
+    {/* Body area — same padding as .item-card-body (14px 0 16px) */}
+    <div style={{ padding: "14px 0 16px" }}>
+      {/* Title — matches .item-card-name (14.5px bold, mb 10px) */}
+      <Skeleton
+        width="65%"
+        height={14}
+        style={{ marginBottom: 10, borderRadius: 6 }}
+      />
+
+      {/* 4 meta rows — matches .item-card-meta gap: 5px */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+        <Skeleton width="50%" height={12} style={{ borderRadius: 6 }} />
+        <Skeleton width="60%" height={12} style={{ borderRadius: 6 }} />
+        <Skeleton width="45%" height={12} style={{ borderRadius: 6 }} />
+        <Skeleton width="55%" height={12} style={{ borderRadius: 6 }} />
+      </div>
     </div>
   </div>
 );
@@ -253,10 +277,7 @@ const ItemList = ({
 
   if (loading) {
     return (
-      <SkeletonTheme
-        baseColor="var(--main-background)"
-        highlightColor="var(--secondary-background)"
-      >
+      <SkeletonTheme baseColor="#e2e8f0" highlightColor="#f1f5f9">
         <div className={wrapperClass}>
           <div className="item-list">
             {Array.from({ length: 12 }).map((_, i) => (
