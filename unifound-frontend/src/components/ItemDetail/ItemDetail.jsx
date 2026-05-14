@@ -20,6 +20,7 @@ import {
   Mail,
 } from "lucide-react";
 import { useAuth } from "../../providers/AuthProvider";
+import { useSidebar } from "../../providers/SidebarProvider";
 import EditItemForm from "../EditItemForm/EditItemForm";
 import ConfirmModal from "../ConfirmModal/ConfirmModal";
 import ClaimModal from "../ClaimModal/ClaimModal";
@@ -60,6 +61,7 @@ const STATUS_CONFIG = {
 
 const ItemDetail = ({ item: listItem, onBack }) => {
   const { user } = useAuth();
+  const { isOpen: sidebarOpen } = useSidebar();
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -213,7 +215,9 @@ const ItemDetail = ({ item: listItem, onBack }) => {
 
   return (
     <>
-      <div className="item-detail-overlay">
+      <div
+        className={`item-detail-overlay ${sidebarOpen ? "item-detail-overlay--sidebar-open" : "item-detail-overlay--sidebar-closed"}`}
+      >
         <div className="item-detail-container">
           <button className="item-detail-back" onClick={onBack}>
             <ArrowLeft size={16} />

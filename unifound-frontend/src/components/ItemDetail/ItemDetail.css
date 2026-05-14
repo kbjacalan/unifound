@@ -1,11 +1,22 @@
 .item-detail-overlay {
   position: fixed;
-  inset: 0;
   top: 64px;
+  left: 0;
+  right: 0;
+  bottom: 0;
   background-color: var(--primary-background, #f8fafc);
   overflow-y: auto;
   z-index: 100;
   animation: detailFadeIn 0.22s ease;
+  transition: left 0.3s ease;
+}
+
+.item-detail-overlay--sidebar-open {
+  left: 260px;
+}
+
+.item-detail-overlay--sidebar-closed {
+  left: 0;
 }
 
 @keyframes detailFadeIn {
