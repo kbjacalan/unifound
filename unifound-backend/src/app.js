@@ -13,6 +13,7 @@ const notificationsRoutes = require("./routes/notifications.routes");
 const errorHandler = require("./middlewares/error.middleware");
 
 const app = express();
+app.set("trust proxy", 1);
 
 // General limiter — applies to all routes
 const generalLimiter = rateLimit({
