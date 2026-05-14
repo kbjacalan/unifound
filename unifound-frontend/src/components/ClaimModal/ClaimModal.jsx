@@ -53,7 +53,7 @@ const ClaimModal = ({ item, onClose, onSubmitted }) => {
   };
 
   const isFound = item?.status === "found";
-  const contactEmail = item?.contact_email || "";
+  const contactEmail = item?.contactEmail || "";
 
   return (
     <div className="claim-overlay" onClick={onClose}>
