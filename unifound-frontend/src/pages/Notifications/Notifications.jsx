@@ -296,7 +296,9 @@ const Notifications = () => {
               <h1 className="notif-page-title">Notifications</h1>
               <p className="notif-page-sub">
                 {loading ? (
-                  <Skeleton width={120} height={13} />
+                  <SkeletonTheme baseColor="#e2e8f0" highlightColor="#f1f5f9">
+                    <Skeleton width={120} height={13} />
+                  </SkeletonTheme>
                 ) : unreadCount > 0 ? (
                   `${unreadCount} unread notification${unreadCount > 1 ? "s" : ""}`
                 ) : (

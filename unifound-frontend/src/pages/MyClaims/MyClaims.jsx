@@ -227,7 +227,9 @@ const MyClaims = () => {
               <h1 className="myclaims-page-title">My Claims</h1>
               <p className="myclaims-page-sub">
                 {loading ? (
-                  <Skeleton width={120} height={13} />
+                  <SkeletonTheme baseColor="#e2e8f0" highlightColor="#f1f5f9">
+                    <Skeleton width={120} height={13} />
+                  </SkeletonTheme>
                 ) : (
                   `${claims.length} claim${claims.length !== 1 ? "s" : ""} submitted`
                 )}
